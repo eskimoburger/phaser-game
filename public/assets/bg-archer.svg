@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <!-- Archer background with forest theme -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#003300" />
+      <stop offset="100%" stop-color="#002211" />
+    </linearGradient>
+    <linearGradient id="treeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#003300" />
+      <stop offset="100%" stop-color="#002200" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1080" height="1920" fill="url(#bgGradient)" />
+  
+  <!-- Forest silhouette at bottom -->
+  <path d="M0,1500 
+           C50,1480 100,1520 150,1500 
+           C200,1480 250,1450 300,1470 
+           C350,1490 400,1530 450,1510 
+           C500,1490 550,1450 600,1480 
+           C650,1510 700,1540 750,1520 
+           C800,1500 850,1460 900,1490 
+           C950,1520 1000,1550 1050,1530 
+           L1080,1530 L1080,1920 L0,1920 Z" 
+        fill="#004400" opacity="0.7" />
+  
+  <!-- Trees -->
+  <!-- Tree 1 -->
+  <g transform="translate(150, 1550)">
+    <rect x="-15" y="0" width="30" height="150" fill="#332200" />
+    <path d="M0,-200 L-100,-50 L-60,-50 L-140,50 L-40,50 L-100,150 L100,150 L40,50 L140,50 L60,-50 L100,-50 Z" 
+          fill="url(#treeGradient)" opacity="0.8" />
+  </g>
+  
+  <!-- Tree 2 -->
+  <g transform="translate(400, 1600)">
+    <rect x="-12" y="0" width="24" height="120" fill="#332200" />
+    <path d="M0,-180 L-80,-60 L-40,-60 L-100,30 L-30,30 L-80,100 L80,100 L30,30 L100,30 L40,-60 L80,-60 Z" 
+          fill="url(#treeGradient)" opacity="0.8" />
+  </g>
+  
+  <!-- Tree 3 -->
+  <g transform="translate(700, 1580)">
+    <rect x="-18" y="0" width="36" height="160" fill="#332200" />
+    <path d="M0,-220 L-120,-50 L-70,-50 L-160,60 L-50,60 L-120,160 L120,160 L50,60 L160,60 L70,-50 L120,-50 Z" 
+          fill="url(#treeGradient)" opacity="0.8" />
+  </g>
+  
+  <!-- Tree 4 -->
+  <g transform="translate(950, 1620)">
+    <rect x="-10" y="0" width="20" height="100" fill="#332200" />
+    <path d="M0,-150 L-70,-40 L-30,-40 L-80,30 L-20,30 L-60,80 L60,80 L20,30 L80,30 L30,-40 L70,-40 Z" 
+          fill="url(#treeGradient)" opacity="0.8" />
+  </g>
+  
+  <!-- Distant mountains -->
+  <path d="M-100,700 L200,400 L300,500 L500,300 L700,550 L900,350 L1200,700" 
+        fill="none" stroke="#004400" stroke-width="5" opacity="0.3" />
+  
+  <!-- Bow and arrow symbol -->
+  <g transform="translate(540, 400)">
+    <path d="M-150,0 C-130,-100 -100,-150 0,-150 C100,-150 130,-100 150,0 
+             C130,100 100,150 0,150 C-100,150 -130,100 -150,0" 
+          fill="none" stroke="#00AA00" stroke-width="8" opacity="0.3" />
+    
+    <!-- Bowstring -->
+    <path d="M-150,0 L150,0" stroke="#FFFFFF" stroke-width="2" opacity="0.3" />
+    
+    <!-- Arrow -->
+    <path d="M-120,0 L120,0" stroke="#DDAA77" stroke-width="4" opacity="0.4" />
+    <path d="M120,0 L90,-20 L90,20 Z" fill="#DDAA77" opacity="0.4" />
+    <path d="M-120,0 L-140,-10 L-140,10 Z" fill="#AACCAA" opacity="0.4" />
+  </g>
+  
+  <!-- Scattered arrows -->
+  <g stroke="#DDAA77" opacity="0.3">
+    <path d="M200,300 L300,400" stroke-width="3" />
+    <path d="M300,400 L280,380 L290,370 Z" fill="#DDAA77" />
+    
+    <path d="M800,500 L700,600" stroke-width="3" />
+    <path d="M700,600 L720,580 L730,590 Z" fill="#DDAA77" />
+    
+    <path d="M300,900 L400,800" stroke-width="3" />
+    <path d="M400,800 L380,820 L370,810 Z" fill="#DDAA77" />
+    
+    <path d="M750,1000 L850,900" stroke-width="3" />
+    <path d="M850,900 L830,920 L820,910 Z" fill="#DDAA77" />
+    
+    <path d="M500,1200 L600,1100" stroke-width="3" />
+    <path d="M600,1100 L580,1120 L570,1110 Z" fill="#DDAA77" />
+  </g>
+  
+  <!-- Leaf particles -->
+  <g fill="#00AA00" opacity="0.4">
+    <path d="M200,200 C210,190 220,190 230,200 C220,210 210,210 200,200 Z" />
+    <path d="M400,350 C410,340 420,340 430,350 C420,360 410,360 400,350 Z" />
+    <path d="M600,250 C610,240 620,240 630,250 C620,260 610,260 600,250 Z" />
+    <path d="M800,450 C810,440 820,440 830,450 C820,460 810,460 800,450 Z" />
+    <path d="M300,550 C310,540 320,540 330,550 C320,560 310,560 300,550 Z" />
+    <path d="M700,650 C710,640 720,640 730,650 C720,660 710,660 700,650 Z" />
+    <path d="M500,750 C510,740 520,740 530,750 C520,760 510,760 500,750 Z" />
+    <path d="M250,850 C260,840 270,840 280,850 C270,860 260,860 250,850 Z" />
+    <path d="M650,950 C660,940 670,940 680,950 C670,960 660,960 650,950 Z" />
+    <path d="M450,1050 C460,1040 470,1040 480,1050 C470,1060 460,1060 450,1050 Z" />
+    <path d="M850,1150 C860,1140 870,1140 880,1150 C870,1160 860,1160 850,1150 Z" />
+    <path d="M350,1250 C360,1240 370,1240 380,1250 C370,1260 360,1260 350,1250 Z" />
+  </g>
+  
+  <!-- Random stars/sparkles -->
+  <g fill="#AAFFAA" opacity="0.5">
+    <circle cx="100" cy="150" r="1.5" />
+    <circle cx="200" cy="350" r="1" />
+    <circle cx="400" cy="250" r="2" />
+    <circle cx="500" cy="500" r="1" />
+    <circle cx="700" cy="300" r="1.5" />
+    <circle cx="800" cy="200" r="1" />
+    <circle cx="900" cy="100" r="2" />
+    <circle cx="950" cy="450" r="1" />
+    <circle cx="300" cy="700" r="1.5" />
+    <circle cx="600" cy="800" r="1" />
+    <circle cx="150" cy="900" r="1" />
+    <circle cx="850" cy="950" r="2" />
+    <circle cx="450" cy="1100" r="1" />
+    <circle cx="650" cy="1200" r="1.5" />
+    <circle cx="750" cy="1300" r="1" />
+    <circle cx="250" cy="1400" r="2" />
+    <circle cx="950" cy="1500" r="1" />
+    <circle cx="350" cy="1600" r="1.5" />
+    <circle cx="550" cy="1700" r="1" />
+    <circle cx="850" cy="1800" r="2" />
+  </g>
+</svg> 

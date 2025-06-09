@@ -1,0 +1,27 @@
+<svg width="1080" height="1280" xmlns="http://www.w3.org/2000/svg">
+  <!-- Table background -->
+  <rect width="1080" height="1280" fill="#1a4d1a"/>
+  
+  <!-- Table border -->
+  <rect x="50" y="50" width="980" height="1180" fill="none" stroke="#ffffff" stroke-width="8"/>
+  
+  <!-- Center line -->
+  <line x1="50" y1="640" x2="1030" y2="640" stroke="#ffffff" stroke-width="4"/>
+  
+  <!-- Center circle -->
+  <circle cx="540" cy="640" r="80" fill="none" stroke="#ffffff" stroke-width="4"/>
+  
+  <!-- Top goal area -->
+  <rect x="390" y="50" width="300" height="100" fill="none" stroke="#ff4444" stroke-width="6"/>
+  <text x="540" y="110" text-anchor="middle" fill="#ff4444" font-family="Arial" font-size="24" font-weight="bold">RED GOAL</text>
+  
+  <!-- Bottom goal area -->
+  <rect x="390" y="1130" width="300" height="100" fill="none" stroke="#4444ff" stroke-width="6"/>
+  <text x="540" y="1190" text-anchor="middle" fill="#4444ff" font-family="Arial" font-size="24" font-weight="bold">BLUE GOAL</text>
+  
+  <!-- Corner arcs -->
+  <path d="M 50 100 Q 50 50 100 50" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <path d="M 980 50 Q 1030 50 1030 100" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <path d="M 1030 1180 Q 1030 1230 980 1230" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <path d="M 100 1230 Q 50 1230 50 1180" fill="none" stroke="#ffffff" stroke-width="4"/>
+</svg> 

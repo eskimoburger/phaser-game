@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <!-- Gradient Background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000033" />
+      <stop offset="100%" stop-color="#330033" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1080" height="1920" fill="url(#bgGradient)" />
+  
+  <!-- Stars (randomly placed) -->
+  <g fill="#FFFFFF">
+    <circle cx="100" cy="150" r="1.5" opacity="0.8" />
+    <circle cx="200" cy="350" r="1" opacity="0.6" />
+    <circle cx="400" cy="250" r="2" opacity="0.7" />
+    <circle cx="500" cy="500" r="1" opacity="0.5" />
+    <circle cx="700" cy="300" r="1.5" opacity="0.9" />
+    <circle cx="800" cy="200" r="1" opacity="0.4" />
+    <circle cx="900" cy="100" r="2" opacity="0.8" />
+    <circle cx="950" cy="450" r="1" opacity="0.5" />
+    <circle cx="300" cy="700" r="1.5" opacity="0.6" />
+    <circle cx="600" cy="800" r="1" opacity="0.7" />
+    <circle cx="150" cy="900" r="1" opacity="0.8" />
+    <circle cx="850" cy="950" r="2" opacity="0.9" />
+    <circle cx="450" cy="1100" r="1" opacity="0.5" />
+    <circle cx="650" cy="1200" r="1.5" opacity="0.7" />
+    <circle cx="750" cy="1300" r="1" opacity="0.6" />
+    <circle cx="250" cy="1400" r="2" opacity="0.8" />
+    <circle cx="950" cy="1500" r="1" opacity="0.4" />
+    <circle cx="350" cy="1600" r="1.5" opacity="0.9" />
+    <circle cx="550" cy="1700" r="1" opacity="0.7" />
+    <circle cx="850" cy="1800" r="2" opacity="0.8" />
+  </g>
+</svg> 

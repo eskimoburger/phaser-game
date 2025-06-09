@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="200" viewBox="0 0 500 200">
+  <!-- Logo Background -->
+  <rect x="0" y="0" width="500" height="200" rx="25" ry="25" fill="#FF6600" />
+  
+  <!-- Logo Text -->
+  <text x="250" y="80" font-family="Arial" font-size="54" font-weight="bold" fill="#FFFFFF" text-anchor="middle">BOSS</text>
+  <text x="250" y="140" font-family="Arial" font-size="54" font-weight="bold" fill="#FFFFFF" text-anchor="middle">BATTLE</text>
+</svg> 

@@ -3,6 +3,7 @@ body {
     padding: 0;
     color: rgba(255, 255, 255, 0.87);
     background-color: #0f0f0f;
+    font-family: Arial, sans-serif;
 }
 
 #app {
@@ -12,4 +13,81 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.start-page {
+    text-align: center;
+    max-width: 600px;
+    padding: 2rem;
+}
+
+.start-page h1 {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    color: #ffffff;
+}
+
+.start-page p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.start-button {
+    background-color: #4c46f5;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.start-button:hover {
+    background-color: #3832e2;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 70, 245, 0.3);
+}
+
+.start-button:active {
+    transform: translateY(0);
+}
+
+/* Loading Screen Styles */
+.loading-screen {
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+}
+
+.loading-screen h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    color: #ffffff;
+}
+
+.loading-bar-container {
+    width: 100%;
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.loading-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4c46f5, #32e2e2);
+    border-radius: 10px;
+    transition: width 0.2s ease-out;
+}
+
+.loading-text {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: bold;
 }

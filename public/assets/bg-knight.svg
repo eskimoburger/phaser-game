@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <!-- Knight background with castle theme -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4B0000" />
+      <stop offset="100%" stop-color "#330000" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1080" height="1920" fill="url(#bgGradient)" />
+  
+  <!-- Castle wall pattern at bottom -->
+  <path d="M0,1620 L0,1920 L1080,1920 L1080,1620 
+            L1040,1620 L1040,1680 L980,1680 L980,1620
+            L940,1620 L940,1680 L880,1680 L880,1620
+            L840,1620 L840,1680 L780,1680 L780,1620
+            L740,1620 L740,1680 L680,1680 L680,1620
+            L640,1620 L640,1680 L580,1680 L580,1620
+            L540,1620 L540,1680 L480,1680 L480,1620
+            L440,1620 L440,1680 L380,1680 L380,1620
+            L340,1620 L340,1680 L280,1680 L280,1620
+            L240,1620 L240,1680 L180,1680 L180,1620
+            L140,1620 L140,1680 L80,1680 L80,1620
+            L40,1620 L40,1680 L0,1680 Z" 
+        fill="#5A0303"/>
+  
+  <!-- Castle tower on left -->
+  <rect x="120" y="1400" width="160" height="220" fill="#6A1717" />
+  <rect x="140" y="1370" width="120" height="30" fill="#6A1717" />
+  <rect x="160" y="1340" width="80" height="30" fill="#6A1717" />
+  <path d="M120,1400 L120,1620 L280,1620 L280,1400 
+            L260,1400 L260,1450 L240,1450 L240,1400
+            L220,1400 L220,1450 L200,1450 L200,1400
+            L180,1400 L180,1450 L160,1450 L160,1400
+            L140,1400 L140,1450 L120,1450 Z" 
+        fill="#801A1A"/>
+  
+  <!-- Castle tower on right -->
+  <rect x="800" y="1400" width="160" height="220" fill="#6A1717" />
+  <rect x="820" y="1370" width="120" height="30" fill="#6A1717" />
+  <rect x="840" y="1340" width="80" height="30" fill="#6A1717" />
+  <path d="M800,1400 L800,1620 L960,1620 L960,1400 
+            L940,1400 L940,1450 L920,1450 L920,1400
+            L900,1400 L900,1450 L880,1450 L880,1400
+            L860,1400 L860,1450 L840,1450 L840,1400
+            L820,1400 L820,1450 L800,1450 Z" 
+        fill="#801A1A"/>
+  
+  <!-- Shield pattern in background -->
+  <path d="M540,300 L640,400 L590,550 L540,650 L490,550 L440,400 Z" fill="#450505" opacity="0.3" />
+  <path d="M540,350 L610,425 L570,525 L540,600 L510,525 L470,425 Z" fill="#777777" opacity="0.2" />
+  
+  <!-- Sword pattern in background -->
+  <rect x="530" y="700" width="20" height="300" fill="#999999" opacity="0.3" transform="rotate(45, 540, 850)" />
+  <rect x="520" y="650" width="40" height="60" fill="#777777" opacity="0.3" transform="rotate(45, 540, 680)" />
+  
+  <!-- Random stars/sparkles -->
+  <g fill="#FFCCCC" opacity="0.5">
+    <circle cx="100" cy="150" r="1.5" />
+    <circle cx="200" cy="350" r="1" />
+    <circle cx="400" cy="250" r="2" />
+    <circle cx="500" cy="500" r="1" />
+    <circle cx="700" cy="300" r="1.5" />
+    <circle cx="800" cy="200" r="1" />
+    <circle cx="900" cy="100" r="2" />
+    <circle cx="950" cy="450" r="1" />
+    <circle cx="300" cy="700" r="1.5" />
+    <circle cx="600" cy="800" r="1" />
+    <circle cx="150" cy="900" r="1" />
+    <circle cx="850" cy="950" r="2" />
+    <circle cx="450" cy="1100" r="1" />
+    <circle cx="650" cy="1200" r="1.5" />
+    <circle cx="750" cy="1300" r="1" />
+    <circle cx="250" cy="1400" r="2" />
+    <circle cx="950" cy="1500" r="1" />
+    <circle cx="350" cy="1600" r="1.5" />
+    <circle cx="550" cy="1700" r="1" />
+    <circle cx="850" cy="1800" r="2" />
+  </g>
+</svg> 
