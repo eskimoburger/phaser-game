@@ -93,9 +93,9 @@ export class Game extends Scene
         this.countdownTime--;
         this.countdownText.setText(this.countdownTime.toString());
         
-        if (this.countdownTime <= 1) {
+        if (this.countdownTime <= 0) {
             this.countdownEvent.remove();
-            // this.scene.start('GameOver');
+            this.scene.start('AirHockey');
         }
     }
 }

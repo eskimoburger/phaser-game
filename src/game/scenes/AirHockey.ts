@@ -546,12 +546,12 @@ export default class AirHockey extends Phaser.Scene {
     this.helpModal.on('pointerout', () => { this.help.visible = false; });
 
     // Add keyboard shortcut to return to main menu
-    this.input.keyboard!.on('keydown-ESC', () => {
+    this.input.keyboard?.on('keydown-ESC', () => {
       this.scene.start('MainMenu');
     });
 
     // Add keyboard shortcut to restart game (for testing)
-    this.input.keyboard!.on('keydown-R', () => {
+    this.input.keyboard?.on('keydown-R', () => {
       console.log('AirHockey: R key pressed - restarting game');
       if (this.timerEvent) {
         this.timerEvent.destroy();
@@ -563,7 +563,7 @@ export default class AirHockey extends Phaser.Scene {
     });
 
     // Add keyboard shortcut to test timer (for testing - sets timer to 10 seconds)
-    this.input.keyboard!.on('keydown-T', () => {
+    this.input.keyboard?.on('keydown-T', () => {
       console.log('AirHockey: T key pressed - setting timer to 10 seconds for testing');
       this.gameTimer = 10;
       this.timerText.setText(this.formatTime(this.gameTimer));
@@ -571,44 +571,44 @@ export default class AirHockey extends Phaser.Scene {
     });
 
     // Add keyboard shortcuts for difficulty adjustment
-    this.input.keyboard!.on('keydown-Q', () => {
+    this.input.keyboard?.on('keydown-Q', () => {
       this.setBotDifficulty('beginner');
       this.showDifficultyChange('BEGINNER');
       console.log('AirHockey: Bot difficulty set to BEGINNER');
     });
     
-    this.input.keyboard!.on('keydown-ONE', () => {
+    this.input.keyboard?.on('keydown-ONE', () => {
       this.setBotDifficulty('easy');
       this.showDifficultyChange('Easy');
       console.log('AirHockey: Bot difficulty set to Easy');
     });
     
-    this.input.keyboard!.on('keydown-TWO', () => {
+    this.input.keyboard?.on('keydown-TWO', () => {
       this.setBotDifficulty('medium');
       this.showDifficultyChange('Medium');
       console.log('AirHockey: Bot difficulty set to Medium');
     });
     
-    this.input.keyboard!.on('keydown-THREE', () => {
+    this.input.keyboard?.on('keydown-THREE', () => {
       this.setBotDifficulty('hard');
       this.showDifficultyChange('Hard');
       console.log('AirHockey: Bot difficulty set to Hard');
     });
     
-    this.input.keyboard!.on('keydown-FOUR', () => {
+    this.input.keyboard?.on('keydown-FOUR', () => {
       this.setBotDifficulty('extreme');
       this.showDifficultyChange('EXTREME');
       console.log('AirHockey: Bot difficulty set to EXTREME');
     });
     
-    this.input.keyboard!.on('keydown-FIVE', () => {
+    this.input.keyboard?.on('keydown-FIVE', () => {
       this.setBotDifficulty('impossible');
       this.showDifficultyChange('IMPOSSIBLE');
       console.log('AirHockey: Bot difficulty set to IMPOSSIBLE');
     });
     
     // Add fire effect test key for debugging
-    this.input.keyboard!.on('keydown-F', () => {
+    this.input.keyboard?.on('keydown-F', () => {
       if (this.puckFireActive) {
         this.removeFireEffect();
         console.log('AirHockey: Fire effect removed via F key');
@@ -2426,14 +2426,14 @@ export default class AirHockey extends Phaser.Scene {
     }
   }
 
-  private updatePaddlePositions() {
-    // Store CURRENT positions as NEXT frame's previous positions  
-    // This allows proper velocity calculation for impact force
+  // private updatePaddlePositions() {
+  //   // Store CURRENT positions as NEXT frame's previous positions  
+  //   // This allows proper velocity calculation for impact force
     
-    // Note: This method is called BEFORE movement updates, so we're storing
-    // the position from BEFORE this frame's movement
-    // The velocity calculation in onPaddleHit will be: currentPos - storedPrevPos
-  }
+  //   // Note: This method is called BEFORE movement updates, so we're storing
+  //   // the position from BEFORE this frame's movement
+  //   // The velocity calculation in onPaddleHit will be: currentPos - storedPrevPos
+  // }
   
   private storePreviousPositions() {
     // Store the ACTUAL previous positions before any movement occurs
@@ -3404,11 +3404,11 @@ export default class AirHockey extends Phaser.Scene {
     this.miniGameUsed = state.miniGameUsed;
 
     // Setup keyboard shortcuts again
-    this.input.keyboard!.on('keydown-ESC', () => {
+    this.input.keyboard?.on('keydown-ESC', () => {
       this.scene.start('MainMenu');
     });
 
-    this.input.keyboard!.on('keydown-R', () => {
+    this.input.keyboard?.on('keydown-R', () => {
       console.log('AirHockey: R key pressed - restarting game');
       if (this.timerEvent) {
         this.timerEvent.destroy();
@@ -3419,7 +3419,7 @@ export default class AirHockey extends Phaser.Scene {
       this.scene.restart();
     });
 
-    this.input.keyboard!.on('keydown-T', () => {
+    this.input.keyboard?.on('keydown-T', () => {
       console.log('AirHockey: T key pressed - setting timer to 10 seconds for testing');
       this.gameTimer = 10;
       this.timerText.setText(this.formatTime(this.gameTimer));
@@ -3427,38 +3427,38 @@ export default class AirHockey extends Phaser.Scene {
     });
 
     // Add difficulty shortcuts
-    this.input.keyboard!.on('keydown-Q', () => {
+    this.input.keyboard?.on('keydown-Q', () => {
       this.setBotDifficulty('beginner');
       this.showDifficultyChange('BEGINNER');
     });
     
-    this.input.keyboard!.on('keydown-ONE', () => {
+    this.input.keyboard?.on('keydown-ONE', () => {
       this.setBotDifficulty('easy');
       this.showDifficultyChange('Easy');
     });
     
-    this.input.keyboard!.on('keydown-TWO', () => {
+    this.input.keyboard?.on('keydown-TWO', () => {
       this.setBotDifficulty('medium');
       this.showDifficultyChange('Medium');
     });
     
-    this.input.keyboard!.on('keydown-THREE', () => {
+    this.input.keyboard?.on('keydown-THREE', () => {
       this.setBotDifficulty('hard');
       this.showDifficultyChange('Hard');
     });
     
-    this.input.keyboard!.on('keydown-FOUR', () => {
+    this.input.keyboard?.on('keydown-FOUR', () => {
       this.setBotDifficulty('extreme');
       this.showDifficultyChange('EXTREME');
     });
     
-    this.input.keyboard!.on('keydown-FIVE', () => {
+    this.input.keyboard?.on('keydown-FIVE', () => {
       this.setBotDifficulty('impossible');
       this.showDifficultyChange('IMPOSSIBLE');
     });
     
     // Add fire effect test key for debugging
-    this.input.keyboard!.on('keydown-F', () => {
+    this.input.keyboard?.on('keydown-F', () => {
       if (this.puckFireActive) {
         this.removeFireEffect();
         console.log('AirHockey: Fire effect removed via F key');
