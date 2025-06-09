@@ -66,13 +66,29 @@ export default class MatchingMiniGame extends Phaser.Scene {
     
     this.cart = this.add.image(-100, 1600, 'cart').setScale(0.5)
 
+    // Create sequence display container with medical theme
+    this.createMedicalSequenceDisplay();
+    
+    // Initially hide the sequence display until cart is in position
+    this.sequenceDisplay.setAlpha(0);
+    
     // Animate cart sliding to center
     this.tweens.add({
       targets: this.cart,
       x: 540, // Move to center x position
       duration: 1000,
       ease: 'Back.easeOut',
-      delay: 1000 // Small delay before animation starts
+      delay: 1000, // Small delay before animation starts
+      onComplete: () => {
+        // Show the sequence display with an animation when cart reaches center
+        this.tweens.add({
+          targets: this.sequenceDisplay,
+          alpha: 1,
+          scale: { from: 1.5, to: 1.8 },
+          duration: 500,
+          ease: 'Back.easeOut'
+        });
+      }
     })
 
     // Create title
@@ -89,7 +105,7 @@ export default class MatchingMiniGame extends Phaser.Scene {
     // this.createPrescriptionNotes();
     
     // Create sequence display container with medical theme
-    this.createMedicalSequenceDisplay();
+    // this.createMedicalSequenceDisplay();
     
     // Create instructions
     // this.miniGameText = this.add.text(540, 280, 'Find the medical items in the correct order!', {
