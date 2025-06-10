@@ -5,7 +5,7 @@ export class CharacterSelect extends Scene {
   title: GameObjects.Text;
   backButton: GameObjects.Image;
   character: GameObjects.Image;
-  characterNames: string[] = ['Lady Delayna', 'Mr. Paperwork', 'Archer'];
+  characterNames: string[] = ['Lady Delayna', 'Phantom Tax'];
   characterFrames: string[] = ['boss1', 'boss2'];
   backgroundFrames: string[] = ['bg-boss-1', 'bg-boss-2'];
   currentIndex: number = 0;
