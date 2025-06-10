@@ -82,7 +82,7 @@ export default class AirHockey extends Phaser.Scene {
   
   // Bot state machine
   private botState: 'defend' | 'attack' | 'wait' | 'recover' = 'defend';
-  private botHomePosition = { x: RINK.centerX, y: RINK.botMinY + 150 };
+  private botHomePosition = { x: RINK.centerX, y: RINK.botMinY + 200 }; // Adjusted for larger boss character
   private botLastMissTime = 0; // Time when bot last missed the puck
 
   private PADDLE_HIT_BASE_SPEED_INCREASE = 120; // Base speed added on paddle hit (Increased from 60 for more impact)
@@ -121,6 +121,9 @@ export default class AirHockey extends Phaser.Scene {
   private inputModeIndicator!: Phaser.GameObjects.Text;
   private botStateIndicator!: Phaser.GameObjects.Text;
   private botDifficultyIndicator!: Phaser.GameObjects.Text;
+  
+  // Boss character animation settings
+  private bossAngerLevel: number = 0;
 
   // Background areas
   private playingAreaBackground!: Phaser.GameObjects.Rectangle;
@@ -260,8 +263,8 @@ export default class AirHockey extends Phaser.Scene {
     
     this.load.image('airhockey-background', "assets/airhockey/airhockey-background.svg");
     this.load.image('puck', 'assets/airhockey/wizball.png');
-    this.load.image('blue-paddle', 'assets/airhockey/blue-paddle.svg');
-    this.load.image('red-paddle', 'assets/airhockey/red-paddle.svg');
+    this.load.image('blue-paddle', 'assets/characters/player.png');
+    this.load.image('red-paddle', 'assets/characters/boss-field2.png');
     this.load.image("help-icon", "assets/airhockey/help.svg");
     this.load.image("net", "assets/airhockey/net.svg");
     
@@ -500,8 +503,34 @@ export default class AirHockey extends Phaser.Scene {
       }
     });
 
-    this.paddleLeft = this.physics.add.sprite(RINK.centerX, RINK.playerMinY + 100, 'blue-paddle').setCircle(35).setImmovable(true);
-    this.paddleRight = this.physics.add.sprite(RINK.centerX, RINK.botMaxY - 100, 'red-paddle').setCircle(35).setImmovable(true);
+    this.paddleLeft = this.physics.add.sprite(RINK.centerX, RINK.playerMinY + 100, 'blue-paddle')
+      .setScale(1)
+      .setOrigin(0.5, 0.5) // Ensure sprite is centered on its position
+      .setImmovable(true);
+          this.paddleRight = this.physics.add.sprite(RINK.centerX, RINK.botMaxY - 100, 'red-paddle')
+      .setScale(1)
+      .setOrigin(0.5, 0.5) // Ensure sprite is centered on its position
+      .setImmovable(true);
+      
+    // Dynamically center the collision circle on the boss sprite
+    const bossTexture = this.textures.get('red-paddle');
+    const bossFrame = bossTexture.get(0);
+    
+    console.log('Boss texture dimensions:', bossFrame.width, bossFrame.height);
+    // Use the same circle radius for both paddles for consistent collision
+    const circleRadius = 35;
+    // Calculate offsets from top-left to center the collision circle
+    const offsetX = (bossFrame.width / 2) - circleRadius;
+    const offsetY = (bossFrame.height / 2) - circleRadius;
+    (this.paddleRight.body as Phaser.Physics.Arcade.Body).setCircle(circleRadius, offsetX, offsetY);
+    
+    // Dynamically center the collision circle on the player sprite
+    const playerTexture = this.textures.get('blue-paddle');
+    const playerFrame = playerTexture.get(0);
+    const playerCircleRadius = 35;
+    const playerOffsetX = (playerFrame.width / 2) - playerCircleRadius;
+    const playerOffsetY = (playerFrame.height / 2) - playerCircleRadius;
+    (this.paddleLeft.body as Phaser.Physics.Arcade.Body).setCircle(playerCircleRadius, playerOffsetX, playerOffsetY);
 
     (this.paddleLeft.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
     (this.paddleRight.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
@@ -576,37 +605,43 @@ export default class AirHockey extends Phaser.Scene {
     this.input.keyboard?.on('keydown-Q', () => {
       this.setBotDifficulty('beginner');
       this.showDifficultyChange('BEGINNER');
-      console.log('AirHockey: Bot difficulty set to BEGINNER');
+      this.playBossTaunt('pathetic');
+      console.log('AirHockey: Boss difficulty set to PATHETIC');
     });
     
     this.input.keyboard?.on('keydown-ONE', () => {
       this.setBotDifficulty('easy');
       this.showDifficultyChange('Easy');
-      console.log('AirHockey: Bot difficulty set to Easy');
+      this.playBossTaunt('weak');
+      console.log('AirHockey: Boss difficulty set to Weak');
     });
     
     this.input.keyboard?.on('keydown-TWO', () => {
       this.setBotDifficulty('medium');
       this.showDifficultyChange('Medium');
-      console.log('AirHockey: Bot difficulty set to Medium');
+      this.playBossTaunt('average');
+      console.log('AirHockey: Boss difficulty set to Average');
     });
     
     this.input.keyboard?.on('keydown-THREE', () => {
       this.setBotDifficulty('hard');
       this.showDifficultyChange('Hard');
-      console.log('AirHockey: Bot difficulty set to Hard');
+      this.playBossTaunt('powerful');
+      console.log('AirHockey: Boss difficulty set to Powerful');
     });
     
     this.input.keyboard?.on('keydown-FOUR', () => {
       this.setBotDifficulty('extreme');
       this.showDifficultyChange('EXTREME');
-      console.log('AirHockey: Bot difficulty set to EXTREME');
+      this.playBossTaunt('enraged');
+      console.log('AirHockey: Boss difficulty set to ENRAGED');
     });
     
     this.input.keyboard?.on('keydown-FIVE', () => {
       this.setBotDifficulty('impossible');
       this.showDifficultyChange('IMPOSSIBLE');
-      console.log('AirHockey: Bot difficulty set to IMPOSSIBLE');
+      this.playBossTaunt('godlike');
+      console.log('AirHockey: Boss difficulty set to GODLIKE');
     });
     
     // Add fire effect test key for debugging
@@ -2156,25 +2191,29 @@ export default class AirHockey extends Phaser.Scene {
     if (!this.botStateIndicator || !this.botDifficultyIndicator) return;
     
     // Update bot state display
-    let stateText = 'Bot: ';
+    let stateText = 'Boss: ';
     let stateColor = '#888888';
     
     switch (this.botState) {
       case 'defend':
-        stateText += 'Defend';
+        stateText += 'Blocking';
         stateColor = '#4da6ff'; // Blue
+        this.updateBossAnimation('defend');
         break;
       case 'attack':
-        stateText += 'Attack';
+        stateText += 'Attacking';
         stateColor = '#ff4444'; // Red
+        this.updateBossAnimation('attack');
         break;
       case 'wait':
-        stateText += 'Wait';
+        stateText += 'Planning';
         stateColor = '#888888'; // Gray
+        this.updateBossAnimation('wait');
         break;
       case 'recover':
-        stateText += 'Recover';
+        stateText += 'Recovering';
         stateColor = '#ffaa44'; // Orange
+        this.updateBossAnimation('recover');
         break;
     }
     
@@ -2187,27 +2226,27 @@ export default class AirHockey extends Phaser.Scene {
     
     switch (this.botDifficulty) {
       case 'beginner':
-        diffText += 'BEGINNER';
+        diffText += 'PATHETIC';
         diffColor = '#44ff44'; // Bright green
         break;
       case 'easy':
-        diffText += 'Easy';
+        diffText += 'Weak';
         diffColor = '#00ff00'; // Green
         break;
       case 'medium':
-        diffText += 'Medium';
+        diffText += 'Average';
         diffColor = '#ffaa00'; // Orange
         break;
       case 'hard':
-        diffText += 'Hard';
+        diffText += 'Powerful';
         diffColor = '#ff0000'; // Red
         break;
       case 'extreme':
-        diffText += 'EXTREME';
+        diffText += 'ENRAGED';
         diffColor = '#ff00ff'; // Magenta
         break;
       case 'impossible':
-        diffText += 'IMPOSSIBLE';
+        diffText += 'GODLIKE';
         diffColor = '#ff0000'; // Bright red
         break;
     }
@@ -2678,35 +2717,42 @@ export default class AirHockey extends Phaser.Scene {
     // Create a temporary text to show difficulty change
     let textColor = '#00ff00'; // Default green for Easy
     let effectColor = 0x00ff00;
+    let bossText = '';
     
     switch (difficulty) {
       case 'BEGINNER':
         textColor = '#44ff44'; // Bright green for beginner
         effectColor = 0x44ff44;
+        bossText = 'BOSS: PATHETIC MODE';
         break;
       case 'Easy':
         textColor = '#00ff00';
         effectColor = 0x00ff00;
+        bossText = 'BOSS: WEAK MODE';
         break;
       case 'Medium':
         textColor = '#ffaa00';
         effectColor = 0xffaa00;
+        bossText = 'BOSS: AVERAGE MODE';
         break;
       case 'Hard':
         textColor = '#ff0000';
         effectColor = 0xff0000;
+        bossText = 'BOSS: POWERFUL MODE';
         break;
       case 'EXTREME':
         textColor = '#ff00ff'; // Magenta for extreme
         effectColor = 0xff00ff;
+        bossText = 'BOSS: ENRAGED MODE';
         break;
       case 'IMPOSSIBLE':
         textColor = '#ff0000'; // Bright red for impossible
         effectColor = 0xff0000;
+        bossText = 'BOSS: GODLIKE MODE';
         break;
     }
     
-    const difficultyText = this.add.text(RINK.centerX, RINK.centerY - 200, `Bot Difficulty: ${difficulty}`, {
+    const difficultyText = this.add.text(RINK.centerX, RINK.centerY - 200, bossText, {
       fontFamily: 'Commando',
       fontSize: difficulty === 'EXTREME' ? '56px' : '48px',
       color: textColor,
@@ -2850,6 +2896,14 @@ export default class AirHockey extends Phaser.Scene {
   private onWallHit() {
     // Enhanced wall collision mechanics - MAXIMUM BOUNCE FUN!
     const currentSpeed = this.ball.body!.velocity.length();
+    
+    // Make boss react to wall hits
+    if (this.botDifficulty !== 'beginner' && Math.random() > 0.5) {
+      this.paddleRight.setTint(0xffdddd);
+      this.time.delayedCall(200, () => {
+        this.updateBossAnimation(this.botState);
+      });
+    }
     
     // Add massive speed boost based on current speed
     let speedBoost = this.WALL_HIT_SPEED_BOOST;
@@ -3378,8 +3432,37 @@ export default class AirHockey extends Phaser.Scene {
     });
 
     // Restore paddles
-    this.paddleLeft = this.physics.add.sprite(state.paddleLeftX, state.paddleLeftY, 'blue-paddle').setCircle(35).setImmovable(true);
-    this.paddleRight = this.physics.add.sprite(state.paddleRightX, state.paddleRightY, 'red-paddle').setCircle(35).setImmovable(true);
+ // this.paddleLeft = this.physics.add.sprite(state.paddleLeftX, state.paddleLeftY, 'blue-paddle').setCircle(35).setImmovable(true);
+          this.paddleRight = this.physics.add.sprite(state.paddleRightX, state.paddleRightY, 'red-paddle')
+      .setScale(1)
+      .setOrigin(0.5, 0.5) // Ensure sprite is centered on its position
+      .setImmovable(true);
+      
+     this.paddleLeft = this.physics.add.sprite(state.paddleLeftX, state.paddleLeftY, 'blue-paddle')
+      .setScale(1)
+      .setOrigin(0.5, 0.5) // Ensure sprite is centered on its position
+      .setImmovable(true);
+
+    // Dynamically center the collision circle on the boss sprite
+    const bossTexture = this.textures.get('red-paddle');
+    const bossFrame = bossTexture.get(0);
+
+    // Use the same circle radius for both paddles for consistent collision
+    const circleRadius = 35;
+    // Calculate offsets from top-left to center the collision circle
+    const offsetX = (bossFrame.width / 2) - circleRadius;
+    const offsetY = (bossFrame.height / 2) - circleRadius;
+    (this.paddleRight.body as Phaser.Physics.Arcade.Body).setCircle(circleRadius, offsetX, offsetY);
+    
+
+    const playerTexture = this.textures.get('blue-paddle');
+    const playerFrame = playerTexture.get(0);
+    const playerCircleRadius = 35;
+    const playerOffsetX = (playerFrame.width / 2) - playerCircleRadius;
+    const playerOffsetY = (playerFrame.height / 2) - playerCircleRadius;
+    (this.paddleLeft.body as Phaser.Physics.Arcade.Body).setCircle(playerCircleRadius, playerOffsetX, playerOffsetY);
+
+ 
 
     (this.paddleLeft.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
     (this.paddleRight.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
@@ -3731,5 +3814,135 @@ export default class AirHockey extends Phaser.Scene {
     this.cameras.main.shake(400, 0.03);
     
     console.log('AirHockey: Fire goal effect created successfully!');
+  }
+
+  // Boss animation methods
+  private updateBossAnimation(state: 'defend' | 'attack' | 'wait' | 'recover') {
+    if (!this.paddleRight) return;
+    
+    // Adjust boss animation based on state
+    switch (state) {
+      case 'attack':
+        // Make boss look angry when attacking
+        this.bossAngerLevel = Math.min(this.bossAngerLevel + 0.1, 1);
+        this.paddleRight.setScale(1.1); // Slightly bigger when attacking
+        this.paddleRight.setTint(0xff9999); // Reddish tint when attacking
+        break;
+        
+      case 'defend':
+        // Boss looks focused when defending
+        this.bossAngerLevel = Math.max(this.bossAngerLevel - 0.05, 0);
+        this.paddleRight.setScale(1.0);
+        this.paddleRight.setTint(0xaaaaff); // Bluish tint when defending
+        break;
+        
+      case 'wait':
+        // Boss returns to normal when waiting
+        this.bossAngerLevel = Math.max(this.bossAngerLevel - 0.1, 0);
+        this.paddleRight.setScale(0.9); // Slightly smaller when waiting
+        this.paddleRight.clearTint();
+        break;
+        
+      case 'recover':
+        // Boss looks confused when recovering
+        this.bossAngerLevel = 0.3;
+        this.paddleRight.setScale(1.0);
+        this.paddleRight.setTint(0xffcc44); // Orange tint when recovering
+        break;
+    }
+    
+    // Apply a pulsing effect when anger level is high
+    if (this.bossAngerLevel > 0.7 && !this.tweens.isTweening(this.paddleRight)) {
+      this.tweens.add({
+        targets: this.paddleRight,
+        scaleX: this.paddleRight.scaleX * 1.1,
+        scaleY: this.paddleRight.scaleY * 1.1,
+        duration: 300,
+        yoyo: true,
+        repeat: 1,
+        ease: 'Sine.easeInOut'
+      });
+    }
+  }
+
+  // Add new boss taunt method
+  private playBossTaunt(type: 'pathetic' | 'weak' | 'average' | 'powerful' | 'enraged' | 'godlike') {
+    if (!this.paddleRight) return;
+    
+    // Create a speech bubble effect
+    const bubbleX = this.paddleRight.x;
+    const bubbleY = this.paddleRight.y - 70;
+    
+    let tauntText = '';
+    switch(type) {
+      case 'pathetic':
+        tauntText = 'Ha! Too easy!';
+        break;
+      case 'weak':
+        tauntText = 'You can do better!';
+        break;
+      case 'average':
+        tauntText = 'Let\'s see what you got!';
+        break;
+      case 'powerful':
+        tauntText = 'Now I\'m serious!';
+        break;
+      case 'enraged':
+        tauntText = 'YOU WILL SUFFER!';
+        break;
+      case 'godlike':
+        tauntText = 'WITNESS MY POWER!';
+        break;
+    }
+    
+    // Create speech bubble background
+    const bubble = this.add.graphics();
+    bubble.fillStyle(0xffffff, 0.9);
+    bubble.lineStyle(4, 0x000000, 1);
+    bubble.fillRoundedRect(bubbleX - 100, bubbleY - 30, 200, 60, 10);
+    bubble.strokeRoundedRect(bubbleX - 100, bubbleY - 30, 200, 60, 10);
+    
+    // Add little triangle at bottom
+    bubble.fillStyle(0xffffff, 0.9);
+    bubble.lineStyle(2, 0x000000, 1);
+    bubble.fillTriangle(
+      bubbleX, bubbleY + 30,
+      bubbleX - 10, bubbleY + 15,
+      bubbleX + 10, bubbleY + 15
+    );
+    bubble.strokeTriangle(
+      bubbleX, bubbleY + 30,
+      bubbleX - 10, bubbleY + 15,
+      bubbleX + 10, bubbleY + 15
+    );
+    
+    bubble.setDepth(20);
+    
+    // Add taunt text
+    const text = this.add.text(bubbleX, bubbleY, tauntText, {
+      fontFamily: 'Commando',
+      fontSize: '18px',
+      color: '#000000',
+      align: 'center'
+    });
+    text.setOrigin(0.5, 0.5);
+    text.setDepth(21);
+    
+    // Animate the boss when taunting
+    this.paddleRight.setScale(1.2);  // Grow slightly
+    
+    // Clear after a moment
+    this.time.delayedCall(2000, () => {
+      this.tweens.add({
+        targets: [bubble, text],
+        alpha: 0,
+        duration: 300,
+        onComplete: () => {
+          bubble.destroy();
+          text.destroy();
+          this.updateBossAnimation(this.botState);
+        }
+      });
+    });
   }
 }
