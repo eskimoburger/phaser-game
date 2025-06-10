@@ -53,7 +53,7 @@ const RINK = {
   bottomGoalY: 1125,  // Bottom goal line (when puck bottom crosses this)
   centerX: 540,       // Horizontal center
   centerY: 640,       // Vertical center (between zones)
-  puckRadius: 33.75   // Puck collision circle radius (122x135 image at 0.5 scale)
+  puckRadius: 30      // Adjusted puck collision radius to match visual appearance
 };
 
 export default class AirHockey extends Phaser.Scene {
@@ -241,7 +241,7 @@ export default class AirHockey extends Phaser.Scene {
         default: 'arcade',
         arcade: {
           gravity: { x: 0, y: 0 },
-          debug: false
+          debug: true
         }
       }
     });
@@ -470,8 +470,10 @@ export default class AirHockey extends Phaser.Scene {
 
     this.ball = this.physics.add.sprite(RINK.centerX, RINK.centerY, 'puck')
       .setScale(0.5)
-      .setCircle(RINK.puckRadius)
-      .setBounce(1.0) // Increased from 0.98 for perfect bounces + our speed boost!
+      .setOrigin(0.5, 0.5) // Ensure the puck is centered properly
+      .setCircle(RINK.puckRadius, (this.textures.get('puck').get(0).width / 2) - RINK.puckRadius, 
+                                 (this.textures.get('puck').get(0).height / 2) - RINK.puckRadius) // Adjust offset to center the collision circle
+      .setBounce(1.0)
       .setCollideWorldBounds(true)
       .setMaxVelocity(this.MAX_BALL_SPEED);
 
@@ -3348,7 +3350,9 @@ export default class AirHockey extends Phaser.Scene {
     // Restore ball
     this.ball = this.physics.add.sprite(state.ballX, state.ballY, 'puck')
       .setScale(0.5)
-      .setCircle(RINK.puckRadius)
+      .setOrigin(0.5, 0.5) // Ensure the puck is centered properly
+      .setCircle(RINK.puckRadius, (this.textures.get('puck').get(0).width / 2) - RINK.puckRadius, 
+                                 (this.textures.get('puck').get(0).height / 2) - RINK.puckRadius) // Adjust offset to center the collision circle
       .setBounce(1.0)
       .setCollideWorldBounds(true)
       .setMaxVelocity(this.MAX_BALL_SPEED);
