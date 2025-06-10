@@ -53,7 +53,7 @@ const RINK = {
   bottomGoalY: 1125,  // Bottom goal line (when puck bottom crosses this)
   centerX: 540,       // Horizontal center
   centerY: 640,       // Vertical center (between zones)
-  puckRadius: 30      // Adjusted puck collision radius to match visual appearance
+  puckRadius: 50      // Adjusted puck collision radius to match visual appearance
 };
 
 export default class AirHockey extends Phaser.Scene {
