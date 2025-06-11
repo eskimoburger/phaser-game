@@ -60,6 +60,8 @@ export class Preloader extends Scene {
     this.load.image("monitor", "matching-game/monitor.png");
     this.load.image("tube-med", "matching-game/tube-med.png");
     this.load.image("cart", "matching-game/cart.png");
+
+    this.load.image("help-icon", "help-icon.png");
   }
 
   create() {
