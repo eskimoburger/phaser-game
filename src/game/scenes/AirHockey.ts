@@ -27,7 +27,7 @@ interface GameState {
   botState: 'defend' | 'attack' | 'wait' | 'recover';
   
   // Input state
-  inputMode: string;
+  inputMode: 'none' | 'keyboard' | 'touch' | 'drag' | 'gamepad';
   paddleLeftTargetX: number;
   paddleLeftTargetY: number;
   
@@ -126,7 +126,7 @@ export default class AirHockey extends Phaser.Scene {
   private bossAngerLevel: number = 0;
 
   // Background areas
-  private playingAreaBackground!: Phaser.GameObjects.Rectangle;
+  private playingAreaBackground!: Phaser.GameObjects.GameObject;
   private statsBackground!: Phaser.GameObjects.Rectangle;
   private blueStatsBackground!: Phaser.GameObjects.Rectangle;
   private redStatsBackground!: Phaser.GameObjects.Rectangle;
@@ -173,7 +173,7 @@ export default class AirHockey extends Phaser.Scene {
 
   // Input priority and conflict resolution
   private lastInputTime = 0;
-  private lastInputType: 'none' | 'keyboard' | 'touch' | 'drag' = 'none';
+  private lastInputType: 'none' | 'keyboard' | 'touch' | 'drag' | 'gamepad' = 'none';
   private inputSwitchCooldown = 100; // ms before allowing input type switch
   private keyboardInputActive = false;
   private touchInputActive = false;
@@ -188,7 +188,7 @@ export default class AirHockey extends Phaser.Scene {
 
   private paddleLeftTargetX = RINK.centerX;
   private paddleLeftTargetY = RINK.playerMinY + 100;
-  private inputMode = 'none';
+  private inputMode: 'none' | 'keyboard' | 'touch' | 'drag' | 'gamepad' = 'none';
   private debugTwoPlayer = false;
   private lastWallSfx = 0;
 
@@ -237,6 +237,21 @@ export default class AirHockey extends Phaser.Scene {
   private readonly TRACE_LIFETIME = 300; // Trace lifetime in milliseconds
   private readonly TRACE_MIN_DISTANCE = 8; // Minimum distance between trace points
 
+  // Gamepad input properties
+  private gamepadConnected = false;
+  private gamepad?: Phaser.Input.Gamepad.Gamepad;
+  private gamepadThreshold = 0.2; // Minimum threshold for stick movement
+  private gamepadVelocityX = 0;
+  private gamepadVelocityY = 0;
+  private gamepadAcceleration = 0.8;
+  private gamepadDamping = 0.85;
+  private gamepadDeadzone = 0.1;
+
+  // Character selection properties
+  private selectedCharacter: string = 'boss1';
+  private characterName: string = 'Lady Delayna';
+  private characterBackground: string = 'boss-bg1';
+
   constructor() {
     super({ 
       key: 'AirHockey',
@@ -265,6 +280,11 @@ export default class AirHockey extends Phaser.Scene {
     this.load.image('puck', 'assets/airhockey/wizball.png');
     this.load.image('blue-paddle', 'assets/characters/player.png');
     this.load.image('red-paddle', 'assets/characters/boss-field2.png');
+    this.load.image("boss-field1", "assets/characters/boss-field1.png");
+    this.load.image("boss-field2", "assets/characters/boss-field2.png");
+    this.load.image("boss-bg1", "assets/background/boss1.png");
+    this.load.image("boss-bg2", "assets/background/boss2.png");
+    
     this.load.image("help-icon", "assets/airhockey/help.svg");
     this.load.image("net", "assets/airhockey/net.svg");
     
@@ -283,6 +303,35 @@ export default class AirHockey extends Phaser.Scene {
     if (data?.resumeGame && this.savedGameState) {
       this.restoreGameState(data.miniGameResult || false);
       return;
+    }
+    
+    // Set up gamepad input
+    this.input.gamepad?.on('connected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      console.log('AirHockey: Gamepad connected:', pad.id);
+      this.gamepadConnected = true;
+      this.gamepad = pad;
+    });
+
+    this.input.gamepad?.on('disconnected', (pad: Phaser.Input.Gamepad.Gamepad) => {
+      console.log('AirHockey: Gamepad disconnected:', pad.id);
+      this.gamepadConnected = false;
+      this.gamepad = undefined;
+      // Reset gamepad input state
+      this.gamepadVelocityX = 0;
+      this.gamepadVelocityY = 0;
+      
+      // If currently in gamepad mode, reset input mode
+      if (this.inputMode === 'gamepad') {
+        this.inputMode = 'none';
+        this.lastInputType = 'none';
+      }
+    });
+    
+    // Check for already connected gamepads
+    if (this.input.gamepad?.total) {
+      this.gamepad = this.input.gamepad.getPad(0);
+      this.gamepadConnected = true;
+      console.log('AirHockey: Gamepad already connected:', this.gamepad.id);
     }
     
     // Reset all game state (only for new games)
@@ -330,7 +379,7 @@ export default class AirHockey extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, 1080, 1280);
     this.physics.world.setBoundsCollision(true, true, true, true);
 
-    this.playingAreaBackground = this.add.rectangle(540, this.playAreaCenter, 1080, 1280, 0x0a4d0a, 0.3);
+    this.playingAreaBackground = this.add.rectangle(540, this.playAreaCenter, 1080, 1280, 0xffffff, 0);
     this.statsBackground = this.add.rectangle(540, this.statsAreaCenter, 1080, 640, 0x1a1a1a, 0.8);
     this.statsBackground.depth = 1;
 
@@ -360,7 +409,7 @@ export default class AirHockey extends Phaser.Scene {
     this.blueHealthBar = this.add.graphics();
     this.blueHealthBar.depth = 4;
 
-    this.redHealthLabel = this.add.text(930, 1420, 'Red Health:', {
+    this.redHealthLabel = this.add.text(930, 1420, this.characterName, {
       fontFamily: 'Commando',
       fontSize: '24px',
       color: '#ff4d4d'
@@ -371,7 +420,7 @@ export default class AirHockey extends Phaser.Scene {
     this.redHealthBar = this.add.graphics();
     this.redHealthBar.depth = 4;
 
-    this.gameInfo = this.add.text(540, 1580, 'Controls: Drag paddles directly OR tap/click to move OR use WASD keys\nBlue paddle: bottom half only - ESC: menu, R: restart, T: test timer (10s), F: test fire effect\nBot Difficulty: Q = BEGINNER, 1 = Easy, 2 = Medium, 3 = Hard, 4 = EXTREME, 5 = IMPOSSIBLE', {
+    this.gameInfo = this.add.text(540, 1580, 'Controls: Drag paddles directly OR tap/click to move OR use WASD keys OR gamepad\nBlue paddle: bottom half only - ESC: menu, R: restart, T: test timer (10s), F: test fire effect\nBot Difficulty: Q = BEGINNER, 1 = Easy, 2 = Medium, 3 = Hard, 4 = EXTREME, 5 = IMPOSSIBLE', {
       fontFamily: 'Commando',
       fontSize: '16px',
       color: '#cccccc',
@@ -468,8 +517,8 @@ export default class AirHockey extends Phaser.Scene {
     this.leftGoal.depth = 2;
 
     // Debug goal lines - visualize goal boundaries
-    this.add.line(0, 0, RINK.minX, RINK.topGoalY, RINK.maxX, RINK.topGoalY, 0xff0000).setOrigin(0, 0).setDepth(5);
-    this.add.line(0, 0, RINK.minX, RINK.bottomGoalY, RINK.maxX, RINK.bottomGoalY, 0x0000ff).setOrigin(0, 0).setDepth(5);
+    // this.add.line(0, 0, RINK.minX, RINK.topGoalY, RINK.maxX, RINK.topGoalY, 0xff0000).setOrigin(0, 0).setDepth(5);
+    // this.add.line(0, 0, RINK.minX, RINK.bottomGoalY, RINK.maxX, RINK.bottomGoalY, 0x0000ff).setOrigin(0, 0).setDepth(5);
 
     this.ball = this.physics.add.sprite(RINK.centerX, RINK.centerY, 'puck')
       .setScale(0.5)
@@ -511,6 +560,9 @@ export default class AirHockey extends Phaser.Scene {
       .setScale(1)
       .setOrigin(0.5, 0.5) // Ensure sprite is centered on its position
       .setImmovable(true);
+      
+    // Get selected character from localStorage (moved here after paddles are created)
+    this.getSelectedCharacter();
       
     // Dynamically center the collision circle on the boss sprite
     const bossTexture = this.textures.get('red-paddle');
@@ -2049,7 +2101,10 @@ export default class AirHockey extends Phaser.Scene {
     // Check for keyboard input activity
     const keyboardActive = this.keyA.isDown || this.keyD.isDown || this.keyW.isDown || this.keyS.isDown;
     
-    // Priority system: Drag > Touch > Keyboard
+    // Check for gamepad input activity
+    const gamepadActive = this.checkGamepadActivity();
+    
+    // Priority system: Drag > Touch > Gamepad > Keyboard
     // Only switch input types if enough time has passed to avoid conflicts
     
     if (this.isDragging) {
@@ -2064,6 +2119,7 @@ export default class AirHockey extends Phaser.Scene {
       const dragCooldown = this.lastInputType === 'drag' ? this.inputSwitchCooldown * 3 : this.inputSwitchCooldown;
       if (this.inputMode !== 'touch' && 
           (this.lastInputType !== 'keyboard' || timeSinceLastInput > this.inputSwitchCooldown) &&
+          (this.lastInputType !== 'gamepad' || timeSinceLastInput > this.inputSwitchCooldown) &&
           (this.lastInputType !== 'drag' || timeSinceLastInput > dragCooldown)) {
         this.clearOtherInputStates('touch');
         this.inputMode = 'touch';
@@ -2074,12 +2130,29 @@ export default class AirHockey extends Phaser.Scene {
       if (this.inputMode === 'touch') {
         this.handleTouchInput();
       }
-    } 
+    }
+    else if (gamepadActive) {
+      // Gamepad has third priority - switch if not conflicting with higher priority inputs
+      const dragCooldown = this.lastInputType === 'drag' ? this.inputSwitchCooldown * 3 : this.inputSwitchCooldown;
+      if (this.inputMode !== 'gamepad' && 
+          (this.lastInputType !== 'touch' || timeSinceLastInput > this.inputSwitchCooldown) &&
+          (this.lastInputType !== 'drag' || timeSinceLastInput > dragCooldown)) {
+        this.clearOtherInputStates('gamepad');
+        this.inputMode = 'gamepad';
+        this.lastInputType = 'gamepad';
+        this.lastInputTime = currentTime;
+      }
+      
+      if (this.inputMode === 'gamepad') {
+        this.handleGamepadInput();
+      }
+    }  
     else if (keyboardActive) {
       // Keyboard has lowest priority - only switch if no other input is active
       const dragCooldown = this.lastInputType === 'drag' ? this.inputSwitchCooldown * 3 : this.inputSwitchCooldown;
       if (this.inputMode !== 'keyboard' && 
           (this.lastInputType !== 'touch' || timeSinceLastInput > this.inputSwitchCooldown) &&
+          (this.lastInputType !== 'gamepad' || timeSinceLastInput > this.inputSwitchCooldown) &&
           (this.lastInputType !== 'drag' || timeSinceLastInput > dragCooldown)) {
         this.clearOtherInputStates('keyboard');
         this.inputMode = 'keyboard';
@@ -2102,30 +2175,43 @@ export default class AirHockey extends Phaser.Scene {
     }
   }
 
-  private clearOtherInputStates(activeInputType: 'drag' | 'touch' | 'keyboard') {
+  private clearOtherInputStates(activeInputType: 'drag' | 'touch' | 'keyboard' | 'gamepad') {
     switch (activeInputType) {
       case 'drag':
-        // Clear touch and keyboard states
+        // Clear touch, keyboard, and gamepad states
         this.isTouchMoving = false;
         this.targetTouchX = undefined;
         this.targetTouchY = undefined;
         this.keyboardInputActive = false;
-        // Reset keyboard velocity when switching away from keyboard
         this.keyboardVelocityX = 0;
         this.keyboardVelocityY = 0;
+        this.gamepadVelocityX = 0;
+        this.gamepadVelocityY = 0;
         break;
       case 'touch':
-        // Clear keyboard states (drag is handled separately)
+        // Clear keyboard and gamepad states (drag is handled separately)
         this.keyboardInputActive = false;
-        // Reset keyboard velocity when switching away from keyboard
         this.keyboardVelocityX = 0;
         this.keyboardVelocityY = 0;
+        this.gamepadVelocityX = 0;
+        this.gamepadVelocityY = 0;
         break;
       case 'keyboard':
-        // Clear touch states (drag is handled separately)
+        // Clear touch and gamepad states (drag is handled separately)
         this.isTouchMoving = false;
         this.targetTouchX = undefined;
         this.targetTouchY = undefined;
+        this.gamepadVelocityX = 0;
+        this.gamepadVelocityY = 0;
+        break;
+      case 'gamepad':
+        // Clear touch and keyboard states (drag is handled separately)
+        this.isTouchMoving = false;
+        this.targetTouchX = undefined;
+        this.targetTouchY = undefined;
+        this.keyboardInputActive = false;
+        this.keyboardVelocityX = 0;
+        this.keyboardVelocityY = 0;
         break;
     }
   }
@@ -2212,10 +2298,19 @@ export default class AirHockey extends Phaser.Scene {
         text += 'Keyboard (WASD)';
         color = '#ffaa44'; // Orange
         break;
+      case 'gamepad':
+        text += 'Gamepad';
+        color = '#ff44ff'; // Purple
+        break;
       default:
         text += 'None';
         color = '#888888'; // Gray
         break;
+    }
+    
+    // Add gamepad info if connected
+    if (this.gamepadConnected && this.gamepad) {
+      text += this.inputMode === 'gamepad' ? ` (${this.gamepad.id.substring(0, 15)}...)` : '';
     }
     
     this.inputModeIndicator.setText(text);
@@ -3377,7 +3472,18 @@ export default class AirHockey extends Phaser.Scene {
     this.physics.world.setBoundsCollision(true, true, true, true);
 
     // Recreate backgrounds
-    this.playingAreaBackground = this.add.rectangle(540, this.playAreaCenter, 1080, 1280, 0x0a4d0a, 0.3);
+    // Create character background image as the playing area background
+    if (this.characterBackground) {
+      this.playingAreaBackground = this.add.image(540, this.playAreaCenter, this.characterBackground)
+        // .setAlpha(0.4)  // Semi-transparent
+        .setDisplaySize(1080, 1280) // Fit to play area
+        .setDepth(0);   // Make sure it's behind game elements
+    } else {
+      // Fallback to dark green background if no character background
+      this.playingAreaBackground = this.add.rectangle(540, this.playAreaCenter, 1080, 1280,  0xffffff, 0);
+    }
+    
+    // Create stats area background
     this.statsBackground = this.add.rectangle(540, this.statsAreaCenter, 1080, 640, 0x1a1a1a, 0.8);
     this.statsBackground.depth = 1;
 
@@ -3406,7 +3512,7 @@ export default class AirHockey extends Phaser.Scene {
     this.blueHealthBar = this.add.graphics();
     this.blueHealthBar.depth = 4;
 
-    this.redHealthLabel = this.add.text(930, 1420, 'Red Health:', {
+    this.redHealthLabel = this.add.text(930, 1420, this.characterName, {
       fontFamily: 'Commando',
       fontSize: '24px',
       color: '#ff4d4d'
@@ -3417,7 +3523,7 @@ export default class AirHockey extends Phaser.Scene {
     this.redHealthBar = this.add.graphics();
     this.redHealthBar.depth = 4;
 
-    this.gameInfo = this.add.text(540, 1580, 'Controls: Drag paddles directly OR tap/click to move OR use WASD keys\nBlue paddle: bottom half only - ESC: menu, R: restart, T: test timer (10s), F: test fire effect\nBot Difficulty: Q = BEGINNER, 1 = Easy, 2 = Medium, 3 = Hard, 4 = EXTREME, 5 = IMPOSSIBLE', {
+    this.gameInfo = this.add.text(540, 1580, 'Controls: Drag paddles directly OR tap/click to move OR use WASD keys OR gamepad\nBlue paddle: bottom half only - ESC: menu, R: restart, T: test timer (10s), F: test fire effect\nBot Difficulty: Q = BEGINNER, 1 = Easy, 2 = Medium, 3 = Hard, 4 = EXTREME, 5 = IMPOSSIBLE', {
       fontFamily: 'Commando',
       fontSize: '16px',
       color: '#cccccc',
@@ -3602,7 +3708,7 @@ export default class AirHockey extends Phaser.Scene {
     this.music = { play: () => {}, stop: () => {}, pause: () => {}, isPlaying: false } as any;
 
     // Restore input state
-    this.inputMode = state.inputMode;
+    this.inputMode = state.inputMode as 'none' | 'keyboard' | 'touch' | 'drag' | 'gamepad';
     this.paddleLeftTargetX = state.paddleLeftTargetX;
     this.paddleLeftTargetY = state.paddleLeftTargetY;
     
@@ -4093,5 +4199,136 @@ export default class AirHockey extends Phaser.Scene {
         }
       });
     });
+  }
+
+  private checkGamepadActivity(): boolean {
+    if (!this.gamepadConnected || !this.gamepad) return false;
+
+    // Check left stick
+    const leftStickX = this.gamepad.leftStick.x;
+    const leftStickY = this.gamepad.leftStick.y;
+    
+    // Check D-pad
+    const dpadLeft = this.gamepad.left;
+    const dpadRight = this.gamepad.right;
+    const dpadUp = this.gamepad.up;
+    const dpadDown = this.gamepad.down;
+    
+    // Check main buttons that could be used for movement
+    const aButton = this.gamepad.A;
+    const bButton = this.gamepad.B;
+    const xButton = this.gamepad.X;
+    const yButton = this.gamepad.Y;
+    
+    // Consider gamepad active if any control exceeds threshold
+    return (
+      Math.abs(leftStickX) > this.gamepadThreshold ||
+      Math.abs(leftStickY) > this.gamepadThreshold ||
+      dpadLeft || dpadRight || dpadUp || dpadDown ||
+      aButton || bButton || xButton || yButton
+    );
+  }
+
+  private handleGamepadInput() {
+    if (!this.gamepadConnected || !this.gamepad) return;
+
+    const maxGamepadSpeed = 12; // Maximum velocity in each direction
+    let inputX = 0;
+    let inputY = 0;
+    
+    // Process left stick input with deadzone
+    if (Math.abs(this.gamepad.leftStick.x) > this.gamepadDeadzone) {
+      inputX = this.gamepad.leftStick.x;
+    }
+    
+    if (Math.abs(this.gamepad.leftStick.y) > this.gamepadDeadzone) {
+      inputY = this.gamepad.leftStick.y;
+    }
+    
+    // Process D-pad input as digital values
+    if (this.gamepad.left) inputX -= 1;
+    if (this.gamepad.right) inputX += 1;
+    if (this.gamepad.up) inputY -= 1;
+    if (this.gamepad.down) inputY += 1;
+    
+    // Apply smooth acceleration/deceleration similar to keyboard
+    if (inputX !== 0) {
+      this.gamepadVelocityX += inputX * this.gamepadAcceleration;
+      this.gamepadVelocityX = Math.max(-maxGamepadSpeed, Math.min(maxGamepadSpeed, this.gamepadVelocityX));
+    } else {
+      this.gamepadVelocityX *= this.gamepadDamping; // Smooth deceleration
+      if (Math.abs(this.gamepadVelocityX) < 0.1) this.gamepadVelocityX = 0;
+    }
+    
+    if (inputY !== 0) {
+      this.gamepadVelocityY += inputY * this.gamepadAcceleration;
+      this.gamepadVelocityY = Math.max(-maxGamepadSpeed, Math.min(maxGamepadSpeed, this.gamepadVelocityY));
+    } else {
+      this.gamepadVelocityY *= this.gamepadDamping; // Smooth deceleration
+      if (Math.abs(this.gamepadVelocityY) < 0.1) this.gamepadVelocityY = 0;
+    }
+    
+    // Apply velocity to target position
+    this.paddleLeftTargetX = this.paddleLeft.x + this.gamepadVelocityX;
+    this.paddleLeftTargetY = this.paddleLeft.y + this.gamepadVelocityY;
+    
+    // Update input timestamp for priority system
+    this.lastInputTime = this.time.now;
+  }
+
+    private getSelectedCharacter(): void {
+    // Get selected character from localStorage (set by CharacterSelect scene)
+    const savedCharacter = localStorage.getItem('selectedCharacter');
+    console.log('🎮 AirHockey: Reading character from localStorage:', savedCharacter);
+    
+    if (savedCharacter) {
+      this.selectedCharacter = savedCharacter;
+      // Map character frame to character name, texture and background
+      const characterNames = ['Lady Delayna', 'Phantom Tax'];
+      const characterFrames = ['boss1', 'boss2'];
+      const characterTextures = ['boss-field1', 'boss-field2'];
+      const characterBackgrounds = ['boss-bg1', 'boss-bg2'];
+      const characterIndex = characterFrames.indexOf(savedCharacter);
+      
+      if (characterIndex !== -1) {
+        this.characterName = characterNames[characterIndex];
+        this.characterBackground = characterBackgrounds[characterIndex];
+        console.log('✅ Character mapped successfully:', this.selectedCharacter, '->', this.characterName);
+        
+        // Set right paddle texture based on selected character
+        if(this.paddleRight) {
+          const paddleTexture = characterTextures[characterIndex];
+          console.log('🎮 Setting bot paddle texture to:', paddleTexture);
+          this.paddleRight.setTexture(paddleTexture);
+        }
+        
+        // Set background based on selected character
+        if(this.playingAreaBackground) {
+          this.playingAreaBackground.destroy();
+          
+          // Create background image - this becomes the new playing area background
+          const bgImage = this.add.image(540, this.playAreaCenter, this.characterBackground)
+            .setAlpha(0.4)  // Semi-transparent (increased from 0.2 for better visibility)
+            .setDisplaySize(1080, 1280) // Fit to play area
+            .setDepth(0);   // Make sure it's behind game elements
+            
+          // Set the background image as the playing area background reference
+          this.playingAreaBackground = bgImage;
+          
+          console.log('🖼️ Updated playing area background to:', this.characterBackground);
+        }
+      } else {
+        console.warn('⚠️ Character not found in mapping, using default');
+      }
+    } else {
+      console.log('📝 No saved character found, using default:', this.selectedCharacter, this.characterName);
+    }
+    
+    console.log('🏁 Final character selection - Frame:', this.selectedCharacter, 'Name:', this.characterName);
+    
+    // Update UI with character name if available
+    if (this.redHealthLabel) {
+      this.redHealthLabel.setText(this.characterName);
+    }
   }
 }

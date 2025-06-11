@@ -1,30 +1,56 @@
 import Phaser from 'phaser';
-import { Paddle } from '../entities/Paddle';
-import { Puck } from '../entities/Puck';
-import { BotAI } from '../systems/BotAI';
-import { InputManager } from '../systems/InputManager';
-import { GameManager } from '../systems/GameManager';
-import { RINK, BotDifficulty } from '../../constants/airHockey';
+                                                    
+// Rink boundaries (matching original)
+const RINK = {
+  minX: 0,
+  maxX: 1080,
+  playerMinY: 700,
+  playerMaxY: 1075,
+  botMinY: 155,
+  botMaxY: 580,
+  topGoalY: 155,
+  bottomGoalY: 1125,
+  centerX: 540,
+  centerY: 640,
+  puckRadius: 50
+};
 
 export default class AirHockeyRefactored extends Phaser.Scene {
-    // Core game objects
-    private playerPaddle!: Paddle;
-    private botPaddle!: Paddle;
-    private puck!: Puck;
-    
-    // Game systems
-    private botAI!: BotAI;
-    private inputManager!: InputManager;
-    private gameManager!: GameManager;
+    // Core game objects (matching original)
+    private ball!: Phaser.Physics.Arcade.Sprite;
+    private paddleLeft!: Phaser.Physics.Arcade.Sprite;  // Player paddle
+    private paddleRight!: Phaser.Physics.Arcade.Sprite; // Bot paddle
+    private background!: Phaser.GameObjects.Image;
     
     // UI elements
     private healthBarLeft!: Phaser.GameObjects.Graphics;
-    private healthBarRight!: Phaser.GameObjects.Graphics;
     private timerText!: Phaser.GameObjects.Text;
     private countdownText!: Phaser.GameObjects.Text;
+    private characterNameText!: Phaser.GameObjects.Text;
+    private bgTop!: Phaser.GameObjects.Image;
+    private bgBottom!: Phaser.GameObjects.Image;
     
-    // Game state
-    private difficulty: BotDifficulty = 'medium';
+    // Game state (matching original)
+    private leftHealth = 100;
+    private rightHealth = 100;
+    private gameTimer = 180; // 3 minutes
+    private gameStarted = false;
+    private countdownActive = false;
+    private countdownValue = 3;
+    
+    // Character selection
+    private selectedCharacter: string = 'boss1';
+    private characterName: string = 'Lady Delayna';
+    
+    // Bot AI (simplified)
+    private botTargetX = RINK.centerX;
+    private botTargetY = RINK.botMinY + 200;
+    private botSmoothness = 0.08;
+    
+    // Input handling
+    private paddleLeftTargetX = RINK.centerX;
+    private paddleLeftTargetY = RINK.playerMinY + 100;
+    private playerSmoothness = 0.15;
     
     constructor() {
         super({ 
@@ -33,7 +59,7 @@ export default class AirHockeyRefactored extends Phaser.Scene {
                 default: 'arcade',
                 arcade: {
                     gravity: { x: 0, y: 0 },
-                    debug: false
+                    debug: true
                 }
             }
         });
@@ -48,61 +74,301 @@ export default class AirHockeyRefactored extends Phaser.Scene {
         this.load.image('red-paddle', 'assets/characters/boss-field2.png');
         this.load.image('help-icon', 'assets/airhockey/help.svg');
         this.load.image('net', 'assets/airhockey/net.svg');
+        
+        // Load character-specific backgrounds
+        this.load.image('bg-boss-1-top', 'assets/characters/boss-field1.png');
+        this.load.image('bg-boss-1-bottom', 'assets/characters/boss-field1.png');
+        this.load.image('bg-boss-2-top', 'assets/characters/boss-field2.png');
+        this.load.image('bg-boss-2-bottom', 'assets/characters/boss-field2.png');
     }
     
-    create(data?: { difficulty?: BotDifficulty; resumeGame?: boolean }): void {
-        console.log('AirHockey: Scene created successfully!');
+    create(data?: { resumeGame?: boolean }): void {
+        console.log('🏒 AirHockey: Scene created successfully!');
         
-        this.difficulty = data?.difficulty || 'medium';
+        // Reset game state
+        this.leftHealth = 100;
+        this.rightHealth = 100;
+        this.gameTimer = 180;
+        this.gameStarted = false;
+        this.countdownActive = false;
+        this.countdownValue = 3;
         
-        this.createBackground();
+        // Setup world bounds (matching original)
+        this.physics.world.setBounds(0, 0, 1080, 1280);
+        this.physics.world.setBoundsCollision(true, true, true, true);
+        
+        // Get selected character from localStorage
+        this.getSelectedCharacter();
+        
+        console.log('🎬 Creating game elements...');
+        this.createWorldBackground();
         this.createGameObjects();
-        this.createSystems();
         this.createUI();
         this.setupPhysics();
-        this.setupEventListeners();
+        this.setupInput();
         
-        // Start the game
-        this.gameManager.startGame();
+        // Start countdown
+        console.log('🚀 Starting countdown...');
+        this.startCountdown();
+        console.log('✅ AirHockey scene initialization complete!');
     }
     
-    private createBackground(): void {
-        this.add.image(540, 960, 'airhockey-background');
-        this.add.image(RINK.centerX, RINK.centerY, 'net');
+    private getSelectedCharacter(): void {
+        // Get selected character from localStorage (set by CharacterSelect scene)
+        const savedCharacter = localStorage.getItem('selectedCharacter');
+        console.log('🎮 AirHockey: Reading character from localStorage:', savedCharacter);
+        
+        if (savedCharacter) {
+            this.selectedCharacter = savedCharacter;
+            // Map character frame to character name
+            const characterNames = ['Lady Delayna', 'Phantom Tax'];
+            const characterFrames = ['boss1', 'boss2'];
+            const characterIndex = characterFrames.indexOf(savedCharacter);
+            
+            if (characterIndex !== -1) {
+                this.characterName = characterNames[characterIndex];
+                console.log('✅ Character mapped successfully:', this.selectedCharacter, '->', this.characterName);
+            } else {
+                console.warn('⚠️ Character not found in mapping, using default');
+            }
+        } else {
+            console.log('📝 No saved character found, using default:', this.selectedCharacter, this.characterName);
+        }
+        
+        console.log('🏁 Final character selection - Frame:', this.selectedCharacter, 'Name:', this.characterName);
+    }
+    
+    private createWorldBackground(): void {
+        // Create background areas (matching original layout)
+        const playAreaCenter = 640;
+        const statsAreaCenter = 1600;
+        
+        // Playing area background
+        this.add.rectangle(540, playAreaCenter, 1080, 1280, 0x0a4d0a, 0.3);
+        
+        // Stats area background
+        this.add.rectangle(540, statsAreaCenter, 1080, 640, 0x1a1a1a, 0.8).setDepth(1);
+        
+        // Main hockey rink background
+        this.background = this.add.image(540, playAreaCenter, 'airhockey-background');
+        this.background.displayHeight = 1280;
+        this.background.displayWidth = 1080;
+        this.background.depth = 0;
+        console.log('🖼️ Main background created');
+        
+        // Character-specific backgrounds for top and bottom areas
+        const bgKey = this.selectedCharacter === 'boss1' ? 'bg-boss-1' : 'bg-boss-2';
+        console.log('🎨 Using background key:', bgKey, 'for character:', this.selectedCharacter);
+        
+        // Top background (opponent area)
+        this.bgTop = this.add.image(540, 400, `${bgKey}-top`)
+            .setOrigin(0.5)
+            .setAlpha(0.3)
+            .setScale(0.8);
+        console.log('⬆️ Top background created:', `${bgKey}-top`);
+        
+        // Bottom background (player area)  
+        this.bgBottom = this.add.image(540, 1500, `${bgKey}-bottom`)
+            .setOrigin(0.5)
+            .setAlpha(0.3)
+            .setScale(0.8);
+        console.log('⬇️ Bottom background created:', `${bgKey}-bottom`);
+        
+        // Goals and net
+        this.add.rectangle(RINK.centerX, RINK.topGoalY - (155/4), 300, 155, 0xffffff, 0.0).setDepth(2);
+        this.add.image(RINK.centerX, RINK.bottomGoalY + (RINK.puckRadius*2) - 70, 'net').setScale(0.6).setDepth(2);
+        
+        // Debug goal lines (matching original)
+        this.add.line(0, 0, RINK.minX, RINK.topGoalY, RINK.maxX, RINK.topGoalY, 0xff0000).setOrigin(0, 0).setDepth(5);
+        this.add.line(0, 0, RINK.minX, RINK.bottomGoalY, RINK.maxX, RINK.bottomGoalY, 0x0000ff).setOrigin(0, 0).setDepth(5);
+        
+        console.log('🥅 Goals and boundaries created');
     }
     
     private createGameObjects(): void {
-        // Create paddles
-        this.playerPaddle = new Paddle(this, RINK.centerX, RINK.playerMinY + 100, 'blue-paddle', true);
-        this.botPaddle = new Paddle(this, RINK.centerX, RINK.botMinY + 200, 'red-paddle', false);
+        // Create ball/puck (matching original setup)
+        this.ball = this.physics.add.sprite(RINK.centerX, RINK.centerY, 'puck')
+            .setScale(0.5)
+            .setOrigin(0.5, 0.5)
+            .setCircle(RINK.puckRadius, (this.textures.get('puck').get(0).width / 2) - RINK.puckRadius, 
+                                     (this.textures.get('puck').get(0).height / 2) - RINK.puckRadius)
+            .setBounce(1.0)
+            .setCollideWorldBounds(true)
+            .setMaxVelocity(2000);
         
-        // Create puck
-        this.puck = new Puck(this, RINK.centerX, RINK.centerY);
+        // Start ball stationary
+        this.ball.setVelocity(0, 0);
+        this.ball.setDamping(true).setDrag(0.002);
+        
+        // Enable world bounds collision detection
+        (this.ball.body as Phaser.Physics.Arcade.Body).onWorldBounds = true;
+        console.log('🏒 Puck created');
+        
+        // Create player paddle (left/blue) 
+        this.paddleLeft = this.physics.add.sprite(RINK.centerX, RINK.playerMinY + 100, 'blue-paddle')
+            .setScale(1)
+            .setOrigin(0.5, 0.5)
+            .setImmovable(true);
+        
+        // Dynamically center collision circle on player sprite
+        const playerTexture = this.textures.get('blue-paddle');
+        const playerFrame = playerTexture.get(0);
+        const playerCircleRadius = 35;
+        const playerOffsetX = (playerFrame.width / 2) - playerCircleRadius;
+        const playerOffsetY = (playerFrame.height / 2) - playerCircleRadius;
+        (this.paddleLeft.body as Phaser.Physics.Arcade.Body).setCircle(playerCircleRadius, playerOffsetX, playerOffsetY);
+        (this.paddleLeft.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
+        
+        this.paddleLeft.setInteractive();
+        this.input.setDraggable(this.paddleLeft);
+        
+        // Add drag events for player paddle
+        this.paddleLeft.on('drag', (pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
+            if (!this.gameStarted) return;
+            
+            // Constrain to player area
+            const constrainedX = Phaser.Math.Clamp(dragX, 50, RINK.maxX - 50);
+            const constrainedY = Phaser.Math.Clamp(dragY, RINK.playerMinY, RINK.playerMaxY);
+            
+            this.paddleLeft.setPosition(constrainedX, constrainedY);
+            this.paddleLeftTargetX = constrainedX;
+            this.paddleLeftTargetY = constrainedY;
+            
+            console.log('🔵 Player paddle dragged to:', constrainedX, constrainedY);
+        });
+        
+        console.log('🔵 Player paddle created');
+        
+        // Create bot paddle (right/red)
+        this.paddleRight = this.physics.add.sprite(RINK.centerX, RINK.botMaxY - 100, 'red-paddle')
+            .setScale(1)
+            .setOrigin(0.5, 0.5)
+            .setImmovable(true);
+        
+        // Dynamically center collision circle on boss sprite
+        const bossTexture = this.textures.get('red-paddle');
+        const bossFrame = bossTexture.get(0);
+        const circleRadius = 35;
+        const offsetX = (bossFrame.width / 2) - circleRadius;
+        const offsetY = (bossFrame.height / 2) - circleRadius;
+        (this.paddleRight.body as Phaser.Physics.Arcade.Body).setCircle(circleRadius, offsetX, offsetY);
+        (this.paddleRight.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
+        
+        console.log('🔴 Bot paddle created');
     }
     
-    private createSystems(): void {
-        // Initialize AI system
-        this.botAI = new BotAI(this.botPaddle, this.puck, this.difficulty);
+    private setupPhysics(): void {
+        // Ball vs paddle collisions (matching original)
+        this.physics.add.collider(this.ball, this.paddleLeft, (ball, paddle) => 
+            this.handlePaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
+        this.physics.add.collider(this.ball, this.paddleRight, (ball, paddle) => 
+            this.handlePaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
         
-        // Initialize input system
-        this.inputManager = new InputManager(this, this.playerPaddle);
+        // World bounds collision handling (matching original)
+        this.physics.world.on('worldbounds', (body: Phaser.Physics.Arcade.Body) => {
+            if (body.gameObject === this.ball) {
+                console.log('🧱 Wall hit!');
+                // Enhanced wall collision - add speed boost (matching original)
+                this.onWallHit();
+            }
+        });
         
-        // Initialize game management system
-        this.gameManager = new GameManager(this);
+        console.log('⚽ Physics collisions setup');
+    }
+    
+    private onWallHit(): void {
+        // Wall hit speed boost (matching original logic)
+        const WALL_HIT_SPEED_BOOST = 200;
+        const WALL_HIT_SPEED_MULTIPLIER = 1.08;
+        const WALL_HIT_MAX_BOOST = 600;
+        
+        const body = this.ball.body as Phaser.Physics.Arcade.Body;
+        const currentSpeed = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
+        
+        if (currentSpeed > 0) {
+            const speedBoost = Math.min(WALL_HIT_SPEED_BOOST, WALL_HIT_MAX_BOOST);
+            const newSpeed = currentSpeed * WALL_HIT_SPEED_MULTIPLIER + speedBoost;
+            const normalizedVelX = body.velocity.x / currentSpeed;
+            const normalizedVelY = body.velocity.y / currentSpeed;
+            
+            body.setVelocity(normalizedVelX * newSpeed, normalizedVelY * newSpeed);
+        }
+    }
+    
+    private setupInput(): void {
+        // Mouse/touch input
+        this.input.on('pointermove', this.handlePointerMove, this);
+        
+        // Keyboard input (matching original)
+        if (this.input.keyboard) {
+            const cursors = this.input.keyboard.createCursorKeys();
+            const wasd = this.input.keyboard.addKeys('W,S,A,D');
+            
+            // Store for update loop (ensuring they exist)
+            (this as any).cursors = cursors;
+            (this as any).wasd = wasd;
+            
+            console.log('🎮 Keyboard setup:', !!cursors, !!wasd);
+        }
+        
+        // Initialize paddle targets
+        this.paddleLeftTargetX = RINK.centerX;
+        this.paddleLeftTargetY = RINK.playerMinY + 100;
+        
+        console.log('🎮 Input setup complete');
     }
     
     private createUI(): void {
+        // Title (matching original layout)
+        this.add.text(540, 1320, 'AIR HOCKEY', {
+            fontFamily: 'Commando',
+            fontSize: '56px',
+            color: '#ffffff'
+        }).setOrigin(0.5, 0).setDepth(3);
+        
+        // Health labels
+        this.add.text(150, 1420, 'Player Health:', {
+            fontFamily: 'Commando',
+            fontSize: '24px',
+            color: '#4da6ff'
+        }).setOrigin(0, 0.5).setDepth(3);
+        
+        // Character name display (replacing right health bar)
+        this.characterNameText = this.add.text(930, 1420, this.characterName, {
+            fontFamily: 'Commando',
+            fontSize: '24px',
+            color: '#ff4d4d'
+        }).setOrigin(1, 0.5).setDepth(3);
+        console.log('📝 Character name text created:', this.characterName);
+        
         // Health bars
         this.healthBarLeft = this.add.graphics();
-        this.healthBarRight = this.add.graphics();
+        this.healthBarLeft.depth = 4;
         this.updateHealthBars();
         
-        // Timer
-        this.timerText = this.add.text(RINK.centerX, 50, '00:00', {
+        // Timer with label (matching original)
+        this.add.text(540, 1480, 'TIME REMAINING', {
+            fontFamily: 'Commando',
             fontSize: '24px',
+            color: '#cccccc'
+        }).setOrigin(0.5, 0.5).setDepth(3);
+        
+        this.timerText = this.add.text(540, 1520, this.formatTime(this.gameTimer), {
+            fontFamily: 'Commando',
+            fontSize: '48px',
             color: '#ffffff',
-            fontFamily: 'Arial'
-        }).setOrigin(0.5);
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5, 0.5).setDepth(3);
+        
+        // Game info (matching original)
+        this.add.text(540, 1580, 'Controls: Drag paddles directly OR tap/click to move OR use WASD keys', {
+            fontFamily: 'Commando',
+            fontSize: '16px',
+            color: '#cccccc',
+            wordWrap: { width: 1000 },
+            align: 'center'
+        }).setOrigin(0.5, 0.5).setDepth(3);
         
         // Countdown text
         this.countdownText = this.add.text(RINK.centerX, RINK.centerY, '', {
@@ -113,145 +379,252 @@ export default class AirHockeyRefactored extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5).setVisible(false);
         
-        // Help icon
-        this.add.image(50, 50, 'help-icon')
-            .setInteractive()
-            .on('pointerdown', this.showHelp, this);
+        console.log('🎨 UI elements created');
     }
     
-    private setupPhysics(): void {
-        // Puck vs paddles collision
-        this.physics.add.collider(this.puck, this.playerPaddle, this.handlePaddleHit, undefined, this);
-        this.physics.add.collider(this.puck, this.botPaddle, this.handlePaddleHit, undefined, this);
+    private startCountdown(): void {
+        this.countdownActive = true;
+        this.countdownValue = 3;
+        this.countdownText.setVisible(true);
+        this.countdownText.setText('GET READY!');
         
-        // World bounds collision for puck
-        this.physics.world.on('worldbounds', this.handleWorldBounds, this);
+        this.time.delayedCall(1000, () => {
+            this.countdownText.setText('3');
+            this.time.delayedCall(1000, () => {
+                this.countdownText.setText('2');
+                this.time.delayedCall(1000, () => {
+                    this.countdownText.setText('1');
+                    this.time.delayedCall(1000, () => {
+                        this.countdownText.setText('GO!');
+                        this.time.delayedCall(1000, () => {
+                            this.countdownText.setVisible(false);
+                            this.startGame();
+                        });
+                    });
+                });
+            });
+        });
     }
     
-    private setupEventListeners(): void {
-        // Game manager events
-        this.gameManager.on('countdownStart', this.onCountdownStart, this);
-        this.gameManager.on('countdown', this.onCountdown, this);
-        this.gameManager.on('gameStart', this.onGameStart, this);
-        this.gameManager.on('timerUpdate', this.onTimerUpdate, this);
-        this.gameManager.on('healthChange', this.onHealthChange, this);
-        this.gameManager.on('goal', this.onGoal, this);
-        this.gameManager.on('resetPuck', this.resetPuckPosition, this);
-        this.gameManager.on('gameEnd', this.onGameEnd, this);
-        this.gameManager.on('miniGameStart', this.onMiniGameStart, this);
+    private startGame(): void {
+        this.gameStarted = true;
+        this.countdownActive = false;
         
-        // Input for escape key (optional features)
-        this.input.keyboard?.once('keydown-ESC', this.handleEscape, this);
+        // Give ball initial velocity
+        this.resetBall();
+        
+        // Start game timer
+        this.time.addEvent({
+            delay: 1000,
+            callback: this.updateTimer,
+            callbackScope: this,
+            loop: true
+        });
+        
+        console.log('🎮 Game started!');
     }
     
-    update(_time: number, delta: number): void {
-        // Update all systems
-        this.inputManager.update();
-        this.botAI.update(delta);
-        this.gameManager.update(delta);
+    update(): void {
+        if (!this.gameStarted) return;
         
-        // Update game objects
-        this.playerPaddle.update();
-        this.botPaddle.update();
-        this.puck.update();
+        // Update player paddle movement
+        this.updatePlayerInput();
+        
+        // Update bot AI
+        this.updateBotAI();
         
         // Check for goals
         this.checkGoals();
         
-        // Debug gamepad info (remove in production)
-        if (Math.floor(_time) % 2000 < delta) { // Log every 2 seconds
-            const gamepadInfo = this.inputManager.getGamepadInfo();
-            const inputMode = this.inputManager.getInputMode();
-            console.log(`Input Mode: ${inputMode}, Gamepad: ${gamepadInfo}`);
+        // Debug ball speed (every 2 seconds)
+        if (this.time.now % 2000 < 16) {
+            const ballBody = this.ball.body as Phaser.Physics.Arcade.Body;
+            const speed = Math.sqrt(ballBody.velocity.x * ballBody.velocity.x + ballBody.velocity.y * ballBody.velocity.y);
+            console.log('⚽ Ball speed:', Math.round(speed), 'Position:', Math.round(this.ball.x), Math.round(this.ball.y));
         }
     }
     
-    private handlePaddleHit(_puck: any, paddle: any): void {
-        const hitPower = paddle === this.playerPaddle ? 1.2 : 1.0;
-        this.puck.hit(paddle, hitPower);
+    private updatePlayerInput(): void {
+        const speed = 8;
+        let deltaX = 0;
+        let deltaY = 0;
+        
+        // Keyboard input
+        const cursors = (this as any).cursors;
+        const wasd = (this as any).wasd;
+        
+        if (cursors || wasd) {
+            if (cursors?.left.isDown || wasd?.A.isDown) deltaX = -speed;
+            if (cursors?.right.isDown || wasd?.D.isDown) deltaX = speed;
+            if (cursors?.up.isDown || wasd?.W.isDown) deltaY = -speed;
+            if (cursors?.down.isDown || wasd?.S.isDown) deltaY = speed;
+        }
+        
+        if (deltaX !== 0 || deltaY !== 0) {
+            this.paddleLeftTargetX = this.paddleLeft.x + deltaX;
+            this.paddleLeftTargetY = this.paddleLeft.y + deltaY;
+        }
+        
+        // Smooth movement
+        this.paddleLeft.x = Phaser.Math.Linear(this.paddleLeft.x, this.paddleLeftTargetX, this.playerSmoothness);
+        this.paddleLeft.y = Phaser.Math.Linear(this.paddleLeft.y, this.paddleLeftTargetY, this.playerSmoothness);
+        
+        // Keep paddle in bounds
+        this.paddleLeft.x = Phaser.Math.Clamp(this.paddleLeft.x, 50, RINK.maxX - 50);
+        this.paddleLeft.y = Phaser.Math.Clamp(this.paddleLeft.y, RINK.playerMinY, RINK.playerMaxY);
     }
     
-    private handleWorldBounds(_event: any, body: any): void {
-        if (body.gameObject === this.puck) {
-            this.puck.wallBounce();
+    private updateBotAI(): void {
+        // Simple bot AI - follow the ball
+        const ballX = this.ball.x;
+        const ballY = this.ball.y;
+        
+        // Predict ball position
+        this.botTargetX = ballX;
+        this.botTargetY = RINK.botMinY + 200;
+        
+        // Smooth movement
+        this.paddleRight.x = Phaser.Math.Linear(this.paddleRight.x, this.botTargetX, this.botSmoothness);
+        this.paddleRight.y = Phaser.Math.Linear(this.paddleRight.y, this.botTargetY, this.botSmoothness);
+        
+        // Keep bot paddle in bounds
+        this.paddleRight.x = Phaser.Math.Clamp(this.paddleRight.x, 50, RINK.maxX - 50);
+        this.paddleRight.y = Phaser.Math.Clamp(this.paddleRight.y, RINK.botMinY, RINK.botMaxY);
+    }
+    
+    private handlePaddleHit(ball: Phaser.Physics.Arcade.Sprite, paddle: Phaser.Physics.Arcade.Sprite): void {
+        // Enhanced paddle hit (matching original logic)
+        const PADDLE_HIT_BASE_SPEED_INCREASE = 120;
+        const PADDLE_HIT_SPEED_MULTIPLIER = 1.03;
+        const MAX_BALL_SPEED = 2000;
+        
+        const ballBody = ball.body as Phaser.Physics.Arcade.Body;
+        const currentSpeed = Math.sqrt(ballBody.velocity.x * ballBody.velocity.x + ballBody.velocity.y * ballBody.velocity.y);
+        
+        // Calculate hit direction
+        const angle = Phaser.Math.Angle.Between(paddle.x, paddle.y, ball.x, ball.y);
+        
+        // Increase speed on hit
+        let newSpeed = currentSpeed;
+        if (currentSpeed > 0) {
+            newSpeed = Math.min(currentSpeed * PADDLE_HIT_SPEED_MULTIPLIER + PADDLE_HIT_BASE_SPEED_INCREASE, MAX_BALL_SPEED);
+        } else {
+            newSpeed = 400; // Initial speed if ball was stationary
         }
+        
+        // Apply hit power boost for player paddle
+        const hitPower = paddle === this.paddleLeft ? 1.2 : 1.0;
+        newSpeed *= hitPower;
+        
+        ball.setVelocity(
+            Math.cos(angle) * newSpeed,
+            Math.sin(angle) * newSpeed
+        );
+        
+        console.log('🏒 Paddle hit! Speed:', Math.round(newSpeed), 'Power:', hitPower);
+    }
+    
+    private handlePointerMove(pointer: Phaser.Input.Pointer): void {
+        if (!this.gameStarted) return;
+        
+        // Move player paddle to pointer position (constrain to player area)
+        this.paddleLeftTargetX = Phaser.Math.Clamp(pointer.x, 50, RINK.maxX - 50);
+        this.paddleLeftTargetY = Phaser.Math.Clamp(pointer.y, RINK.playerMinY, RINK.playerMaxY);
+        
+        console.log('🖱️ Mouse move:', pointer.x, pointer.y, '->', this.paddleLeftTargetX, this.paddleLeftTargetY);
     }
     
     private checkGoals(): void {
-        const puckY = this.puck.y;
-        const puckRadius = RINK.puckRadius;
+        const ballY = this.ball.y;
+        const ballRadius = RINK.puckRadius;
         
-        // Check top goal (bot's goal)
-        if (puckY - puckRadius <= RINK.topGoalY) {
-            this.gameManager.scoreGoal('left', 15);
+        // Check top goal (player scores)
+        if (ballY - ballRadius <= RINK.topGoalY) {
+            this.scoreGoal('player');
         }
         
-        // Check bottom goal (player's goal)
-        if (puckY + puckRadius >= RINK.bottomGoalY) {
-            this.gameManager.scoreGoal('right', 15);
-            this.botAI.onPuckMiss(); // Bot missed defending
-        }
-    }
-    
-    private resetPuckPosition(): void {
-        this.puck.reset(RINK.centerX, RINK.centerY);
-        
-        // Give puck initial velocity toward random side
-        const randomAngle = (Math.random() - 0.5) * Math.PI / 3; // ±30 degrees
-        const initialSpeed = 300;
-        
-        if (this.puck.body && 'setVelocity' in this.puck.body) {
-            const body = this.puck.body as Phaser.Physics.Arcade.Body;
-            body.setVelocity(
-                Math.sin(randomAngle) * initialSpeed,
-                Math.cos(randomAngle) * initialSpeed * (Math.random() > 0.5 ? 1 : -1)
-            );
+        // Check bottom goal (bot scores)
+        if (ballY + ballRadius >= RINK.bottomGoalY) {
+            this.scoreGoal('bot');
         }
     }
     
-    // Event handlers
-    private onCountdownStart(): void {
-        this.countdownText.setVisible(true);
-        this.countdownText.setText('GET READY!');
-    }
-    
-    private onCountdown(value: number): void {
-        if (value > 0) {
-            this.countdownText.setText(value.toString());
+    private scoreGoal(scorer: 'player' | 'bot'): void {
+        const damage = 15;
+        
+        if (scorer === 'player') {
+            this.rightHealth -= damage;
+            console.log('🥅 Player scores! Bot health:', this.rightHealth);
         } else {
-            this.countdownText.setText('GO!');
+            this.leftHealth -= damage;
+            console.log('🥅 Bot scores! Player health:', this.leftHealth);
+        }
+        
+        this.updateHealthBars();
+        this.cameras.main.flash(500, 255, 255, 255);
+        
+        // Check for game end
+        if (this.leftHealth <= 0 || this.rightHealth <= 0) {
+            this.endGame();
+        } else {
+            this.resetBallAfterGoal();
         }
     }
     
-    private onGameStart(): void {
+    private resetBall(): void {
+        this.ball.setPosition(RINK.centerX, RINK.centerY);
+        
+        // Give ball immediate velocity (no delay for first start)
+        const angle = (Math.random() - 0.5) * Math.PI / 3;
+        const speed = 300;
+        this.ball.setVelocity(
+            Math.sin(angle) * speed,
+            Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1)
+        );
+        
+        console.log('⚽ Ball reset with velocity:', Math.round(speed));
+    }
+    
+    private resetBallAfterGoal(): void {
+        this.ball.setPosition(RINK.centerX, RINK.centerY);
+        this.ball.setVelocity(0, 0);
+        
+        // Give ball new velocity after short delay (for goals)
         this.time.delayedCall(1000, () => {
-            this.countdownText.setVisible(false);
+            const angle = (Math.random() - 0.5) * Math.PI / 3;
+            const speed = 300;
+            this.ball.setVelocity(
+                Math.sin(angle) * speed,
+                Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1)
+            );
         });
+    }
+    
+    private updateTimer(): void {
+        if (!this.gameStarted) return;
         
-        this.resetPuckPosition();
-    }
-    
-    private onTimerUpdate(time: number): void {
-        const minutes = Math.floor(time / 60000);
-        const seconds = Math.floor((time % 60000) / 1000);
-        this.timerText.setText(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-    }
-    
-    private onHealthChange(_data: { side: string; health: number }): void {
-        this.updateHealthBars();
-    }
-    
-    private onGoal(data: { side: string; damage: number }): void {
-        // Add visual effects, sounds, etc.
-        console.log(`Goal scored by ${data.side}! Damage: ${data.damage}`);
+        this.gameTimer--;
+        this.timerText.setText(this.formatTime(this.gameTimer));
         
-        // Flash effect
-        this.cameras.main.flash(500, 255, 255, 255);
+        if (this.gameTimer <= 0) {
+            this.endGame();
+        }
     }
     
-    private onGameEnd(data: { winner: string; time: number }): void {
-        // Show game over screen
-        this.add.text(RINK.centerX, RINK.centerY, `${data.winner.toUpperCase()} WINS!`, {
+    private formatTime(seconds: number): string {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    private endGame(): void {
+        this.gameStarted = false;
+        
+        let winner = 'DRAW';
+        if (this.leftHealth > this.rightHealth) winner = 'PLAYER';
+        else if (this.rightHealth > this.leftHealth) winner = 'BOT';
+        
+        this.add.text(RINK.centerX, RINK.centerY, `${winner} WINS!`, {
             fontSize: '48px',
             color: '#ffffff',
             fontFamily: 'Arial',
@@ -259,61 +632,46 @@ export default class AirHockeyRefactored extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5);
         
-        // Return to menu after delay
         this.time.delayedCall(3000, () => {
             this.scene.start('MainMenu');
         });
-    }
-    
-    private onMiniGameStart(): void {
-        // Launch mini game
-        this.scene.launch('MatchingMiniGame');
-        this.scene.pause();
-    }
-    
-    private updateHealthBars(): void {
-        const leftHealth = this.gameManager.getHealth('left');
-        const rightHealth = this.gameManager.getHealth('right');
         
-        // Clear and redraw health bars
-        this.healthBarLeft.clear();
-        this.healthBarRight.clear();
-        
-        // Left health bar (green to red gradient)
-        this.healthBarLeft.fillStyle(leftHealth > 50 ? 0x00ff00 : leftHealth > 25 ? 0xffff00 : 0xff0000);
-        this.healthBarLeft.fillRect(50, 100, (leftHealth / 100) * 200, 20);
-        
-        // Right health bar
-        this.healthBarRight.fillStyle(rightHealth > 50 ? 0x00ff00 : rightHealth > 25 ? 0xffff00 : 0xff0000);
-        this.healthBarRight.fillRect(RINK.maxX - 250, 100, (rightHealth / 100) * 200, 20);
+        console.log('🏁 Game ended! Winner:', winner);
     }
     
     private showHelp(): void {
-        // Show help overlay or pause game
-        console.log('Help requested');
+        console.log('🆘 Help requested');
         // Implementation depends on your help system
     }
     
-    private handleEscape(): void {
-        // Pause game or show menu
-        this.scene.pause();
-        this.scene.launch('PauseMenu');
-    }
-    
-    public setDifficulty(difficulty: BotDifficulty): void {
-        this.difficulty = difficulty;
-        if (this.botAI) {
-            this.botAI.setDifficulty(difficulty);
-        }
-    }
-    
-    public getDifficulty(): BotDifficulty {
-        return this.difficulty;
-    }
-    
-    shutdown(): void {
-        // Clean up systems
-        this.inputManager?.destroy();
-        this.gameManager?.removeAllListeners();
+    private updateHealthBars(): void {
+        // Clear and redraw health bar
+        this.healthBarLeft.clear();
+        
+        // Player health bar (matching original styling)
+        const healthPercent = this.leftHealth / 100;
+        const barWidth = 200;
+        const barHeight = 30;
+        const barX = 150;
+        const barY = 1440;
+        
+        // Background
+        this.healthBarLeft.fillStyle(0x222222);
+        this.healthBarLeft.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Health fill (green to red gradient based on health)
+        let color = 0x00ff00; // Green
+        if (this.leftHealth < 50) color = 0xffff00; // Yellow
+        if (this.leftHealth < 25) color = 0xff0000; // Red
+        
+        this.healthBarLeft.fillStyle(color);
+        this.healthBarLeft.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+        
+        // Border
+        this.healthBarLeft.lineStyle(2, 0xffffff);
+        this.healthBarLeft.strokeRect(barX, barY, barWidth, barHeight);
+        
+        // Character name replaces the right health bar display
+        // Health bar shows player health, character name shows selected character
     }
 }

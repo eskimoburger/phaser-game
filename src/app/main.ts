@@ -7,7 +7,7 @@ import { Preloader } from '../game/scenes/Preloader';
 import { CharacterSelect } from '../game/scenes/CharacterSelect';
 import { MainMenu } from '../game/scenes/MainMenu';
 import AirHockey from '../game/scenes/AirHockey';
-import AirHockeyRefactored from '../game/scenes/AirHockeyRefactored';
+// import AirHockeyRefactored from '../game/scenes/AirHockeyRefactored';
 import MatchingMiniGame from '../game/scenes/MatchingMiniGame';
 
 const scenes = [
@@ -18,7 +18,7 @@ const scenes = [
     MainGame,
     GameOver,
     AirHockey,
-    AirHockeyRefactored,
+    // AirHockeyRefactored,
     MatchingMiniGame
 ];
 
