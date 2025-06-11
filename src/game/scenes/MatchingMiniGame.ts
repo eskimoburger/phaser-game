@@ -135,10 +135,32 @@ export default class MatchingMiniGame extends Phaser.Scene {
     // });
     // escapeText.setOrigin(0.5, 0.5);
     
-    // Add escape key handler
+    // No escape allowed - must complete the mini-game
     if (this.input.keyboard) {
       this.input.keyboard.on('keydown-ESC', () => {
-        this.exitMiniGame(false);
+        console.log('MatchingMiniGame: ESC pressed - but escape is not allowed');
+        
+        // Show warning message
+        const warningText = this.add.text(540, 400, 'YOU MUST COMPLETE THE MINI-GAME!', {
+          fontFamily: 'Commando',
+          fontSize: '28px',
+          color: '#ff0000',
+          stroke: '#000000',
+          strokeThickness: 4
+        });
+        warningText.setOrigin(0.5, 0.5);
+        
+        // Make it flash to grab attention
+        this.tweens.add({
+          targets: warningText,
+          alpha: 0.3,
+          duration: 100,
+          yoyo: true,
+          repeat: 5,
+          onComplete: () => {
+            warningText.destroy();
+          }
+        });
       });
     }
   }
