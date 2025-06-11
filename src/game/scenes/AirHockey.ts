@@ -578,6 +578,36 @@ export default class AirHockey extends Phaser.Scene {
 
     // Add keyboard shortcut to return to main menu
     this.input.keyboard?.on('keydown-ESC', () => {
+      // If mini-game help is active, prevent escape and show warning
+      if (this.slidingHelpButton && this.gamePaused) {
+        console.log('AirHockey: ESC pressed - but mini-game entry is forced');
+        
+        // Show a warning message
+        const warningText = this.add.text(RINK.centerX, RINK.centerY + 100, 'YOU MUST ENTER THE MINI-GAME!', {
+          fontFamily: 'Commando',
+          fontSize: '28px',
+          color: '#ff0000',
+          stroke: '#000000',
+          strokeThickness: 4
+        });
+        warningText.setOrigin(0.5, 0.5);
+        warningText.setDepth(110);
+        
+        // Make it flash to grab attention
+        this.tweens.add({
+          targets: warningText,
+          alpha: 0.3,
+          duration: 100,
+          yoyo: true,
+          repeat: 5,
+          onComplete: () => {
+            warningText.destroy();
+          }
+        });
+        return;
+      }
+      
+      // Normal behavior if mini-game not active
       this.scene.start('MainMenu');
     });
 
@@ -755,6 +785,11 @@ export default class AirHockey extends Phaser.Scene {
         this.leftHealth -= 10;
         // Trigger blue blink effect for blue player losing health
         this.triggerHealthLossBlink('blue');
+        
+        // Show sliding help button when player health is very low
+        if (this.leftHealth <= 10 && !this.slidingHelpShown && !this.miniGameUsed && !this.win && !this.gameRestart) {
+          this.showSlidingHelpButton();
+        }
       }
     }
     
@@ -3041,52 +3076,53 @@ export default class AirHockey extends Phaser.Scene {
     if (this.slidingHelpShown || this.slidingHelpButton) return;
     
     this.slidingHelpShown = true;
-    console.log('AirHockey: Showing sliding help button for mini game');
+    console.log('AirHockey: Showing sliding help button for mini game - FORCED ENTRY');
+    
+    // Pause the game when help button appears - cannot be resumed except by entering mini-game
+    this.pauseGame();
+    
+    // Add darkened background overlay to block interaction with game
+    const darkOverlay = this.add.rectangle(RINK.centerX, RINK.centerY, RINK.maxX * 2, RINK.bottomGoalY * 2, 0x000000, 0.5);
+    darkOverlay.setDepth(90); // Below the help button but above everything else
     
     // Create container for the sliding help button
-    this.slidingHelpButton = this.add.container(-120, RINK.centerY);
-    this.slidingHelpButton.setDepth(20);
+    this.slidingHelpButton = this.add.container(-400, RINK.centerY);
+    this.slidingHelpButton.setDepth(100); // Ensure it's above everything
+    this.slidingHelpButton.setScale(1.5); // Make it bigger and more noticeable
     
-    // Create background for the button (rounded rectangle effect)
-    const buttonBg = this.add.rectangle(0, 0, 100, 80, 0x4da6ff, 0.9);
-    buttonBg.setStrokeStyle(3, 0xffffff, 1);
+    // Create transparent background for the button - the image already has a background
+    const buttonBg = this.add.rectangle(0, 0, 400, 200, 0x483d99, 0);
+    // No stroke needed as the image has its own border
     
-    // Create help icon/text
-    const helpIcon = this.add.text(0, -10, '🎮', {
-      fontSize: '32px'
-    });
+    // Create help icon using loaded asset - this image already has all the text
+    const helpIcon = this.add.image(0, 0,"help-icon");
+    helpIcon.setScale(0.3);
     helpIcon.setOrigin(0.5, 0.5);
-    
-    const helpText = this.add.text(0, 15, 'MINI\nGAME', {
-      fontFamily: 'Commando',
-      fontSize: '12px',
-      color: '#ffffff',
-      align: 'center'
-    });
-    helpText.setOrigin(0.5, 0.5);
-    
-    // Add "ONE TIME" indicator
-    const oneTimeText = this.add.text(0, 35, 'ONE TIME', {
-      fontFamily: 'Commando',
-      fontSize: '8px',
-      color: '#ffff00',
-      align: 'center'
-    });
-    oneTimeText.setOrigin(0.5, 0.5);
     
     // Add pulsing effect
     const pulseEffect = this.add.circle(0, 0, 45, 0x00ffff, 0.3);
     
     // Add components to container
-    this.slidingHelpButton.add([pulseEffect, buttonBg, helpIcon, helpText, oneTimeText]);
+    this.slidingHelpButton.add([pulseEffect, buttonBg, helpIcon]);
     
-    // Make it interactive
-    this.slidingHelpButton.setSize(100, 80);
-    this.slidingHelpButton.setInteractive();
+    // Make it interactive - increase the hit area to make it easier to click
+    this.slidingHelpButton.setSize(400, 200);
+    this.slidingHelpButton.setInteractive({
+      useHandCursor: true  // Show hand cursor on hover
+    });
     
     // Add click handler
     this.slidingHelpButton.on('pointerdown', () => {
+      console.log('AirHockey: Help button clicked!');
+      // Resume the game first
+      this.resumeGame();
+      // Then enter mini game
       this.enterMiniGame();
+    });
+    
+    // Add another debug handler for any click issues
+    this.slidingHelpButton.on('pointerover', () => {
+      console.log('AirHockey: Mouse over help button');
     });
     
     // Add hover effects
@@ -3110,10 +3146,40 @@ export default class AirHockey extends Phaser.Scene {
       });
     });
     
-    // Slide in animation from left
+    // No background click to resume game - force mini-game entry
+    const bgClickArea = this.add.rectangle(RINK.centerX, RINK.centerY, RINK.maxX * 2, RINK.bottomGoalY * 2, 0x000000, 0.01);
+    bgClickArea.setInteractive();
+    bgClickArea.setDepth(95); // Below the help button but above the dark overlay
+    bgClickArea.on('pointerdown', () => {
+      console.log('AirHockey: Background clicked - but mini-game is forced');
+      // Show a "Must enter mini-game" message
+      const warningText = this.add.text(RINK.centerX, RINK.centerY + 100, 'YOU MUST ENTER THE MINI-GAME!', {
+        fontFamily: 'Commando',
+        fontSize: '28px',
+        color: '#ff0000',
+        stroke: '#000000',
+        strokeThickness: 4
+      });
+      warningText.setOrigin(0.5, 0.5);
+      warningText.setDepth(110);
+      
+      // Make it flash to grab attention
+      this.tweens.add({
+        targets: warningText,
+        alpha: 0.3,
+        duration: 100,
+        yoyo: true,
+        repeat: 5,
+        onComplete: () => {
+          warningText.destroy();
+        }
+      });
+    });
+    
+    // Slide in animation from left to center
     this.tweens.add({
       targets: this.slidingHelpButton,
-      x: 70, // Final position from left edge
+      x: RINK.centerX - 250, // Center of the screen
       duration: 800,
       ease: 'Back.easeOut',
       onComplete: () => {
@@ -3142,6 +3208,48 @@ export default class AirHockey extends Phaser.Scene {
     });
   }
   
+  private pauseGame() {
+    if (this.gamePaused) return; // Already paused
+    
+    console.log('AirHockey: Pausing game for help button');
+    
+    // Set paused state
+    this.gamePaused = true;
+    
+    // Store ball velocity
+    this.storedBallVelocityX = this.ball.body!.velocity.x;
+    this.storedBallVelocityY = this.ball.body!.velocity.y;
+    
+    // Stop the ball
+    this.ball.body!.stop();
+    
+    // Pause the timer
+    if (this.timerEvent) {
+      this.timerEvent.paused = true;
+    }
+    
+    console.log('AirHockey: Game paused successfully');
+  }
+  
+  private resumeGame() {
+    if (!this.gamePaused) return; // Not paused
+    
+    console.log('AirHockey: Resuming game');
+    
+    // Reset paused state
+    this.gamePaused = false;
+    
+    // Restore ball velocity
+    (this.ball.body as Phaser.Physics.Arcade.Body).setVelocity(this.storedBallVelocityX, this.storedBallVelocityY);
+    
+    // Resume timer
+    if (this.timerEvent) {
+      this.timerEvent.paused = false;
+    }
+    
+    console.log('AirHockey: Game resumed successfully');
+  }
+
   private enterMiniGame() {
     console.log('AirHockey: Entering mini game!');
     
@@ -3150,6 +3258,17 @@ export default class AirHockey extends Phaser.Scene {
     
     // Save the complete game state
     this.saveGameState();
+    
+    // Find and destroy the dark overlay
+    const darkOverlay = this.children.list.find(
+      child => child instanceof Phaser.GameObjects.Rectangle && 
+      child.depth === 90 && 
+      child.fillAlpha === 0.5
+    );
+    
+    if (darkOverlay) {
+      darkOverlay.destroy();
+    }
     
     // Hide the sliding help button
     if (this.slidingHelpButton) {
@@ -3492,6 +3611,36 @@ export default class AirHockey extends Phaser.Scene {
 
     // Setup keyboard shortcuts again
     this.input.keyboard?.on('keydown-ESC', () => {
+      // If mini-game help is active, prevent escape and show warning
+      if (this.slidingHelpButton && this.gamePaused) {
+        console.log('AirHockey: ESC pressed - but mini-game entry is forced');
+        
+        // Show a warning message
+        const warningText = this.add.text(RINK.centerX, RINK.centerY + 100, 'YOU MUST ENTER THE MINI-GAME!', {
+          fontFamily: 'Commando',
+          fontSize: '28px',
+          color: '#ff0000',
+          stroke: '#000000',
+          strokeThickness: 4
+        });
+        warningText.setOrigin(0.5, 0.5);
+        warningText.setDepth(110);
+        
+        // Make it flash to grab attention
+        this.tweens.add({
+          targets: warningText,
+          alpha: 0.3,
+          duration: 100,
+          yoyo: true,
+          repeat: 5,
+          onComplete: () => {
+            warningText.destroy();
+          }
+        });
+        return;
+      }
+      
+      // Normal behavior if mini-game not active
       this.scene.start('MainMenu');
     });
 
