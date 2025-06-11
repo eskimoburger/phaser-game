@@ -157,6 +157,13 @@ export default class AirHockeyRefactored extends Phaser.Scene {
         
         // Check for goals
         this.checkGoals();
+        
+        // Debug gamepad info (remove in production)
+        if (Math.floor(_time) % 2000 < delta) { // Log every 2 seconds
+            const gamepadInfo = this.inputManager.getGamepadInfo();
+            const inputMode = this.inputManager.getInputMode();
+            console.log(`Input Mode: ${inputMode}, Gamepad: ${gamepadInfo}`);
+        }
     }
     
     private handlePaddleHit(_puck: any, paddle: any): void {
