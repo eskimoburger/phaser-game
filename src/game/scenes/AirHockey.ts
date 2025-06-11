@@ -39,6 +39,11 @@ interface GameState {
   
   // Fire effect state
   puckFireActive: boolean;
+  
+  // Character state
+  selectedCharacter: string;
+  characterName: string;
+  characterBackground: string;
 }
 
 // Rink boundaries and zones
@@ -3365,6 +3370,17 @@ export default class AirHockey extends Phaser.Scene {
       darkOverlay.destroy();
     }
     
+    // Find and destroy the background click area
+    const bgClickArea = this.children.list.find(
+      child => child instanceof Phaser.GameObjects.Rectangle && 
+      child.depth === 95 && 
+      child.fillAlpha === 0.01
+    );
+    
+    if (bgClickArea) {
+      bgClickArea.destroy();
+    }
+    
     // Hide the sliding help button
     if (this.slidingHelpButton) {
       this.slidingHelpButton.destroy();
@@ -3418,7 +3434,12 @@ export default class AirHockey extends Phaser.Scene {
       miniGameUsed: this.miniGameUsed,
       
       // Fire effect state
-      puckFireActive: this.puckFireActive
+      puckFireActive: this.puckFireActive,
+      
+      // Character state
+      selectedCharacter: this.selectedCharacter,
+      characterName: this.characterName,
+      characterBackground: this.characterBackground
     };
     
     console.log('AirHockey: Game state saved successfully');
@@ -3433,6 +3454,11 @@ export default class AirHockey extends Phaser.Scene {
     console.log('AirHockey: Restoring game state from mini game');
     
     const state = this.savedGameState;
+    
+    // Restore character state first
+    this.selectedCharacter = state.selectedCharacter;
+    this.characterName = state.characterName;
+    this.characterBackground = state.characterBackground;
     
     // Restore game progress
     this.rightHealth = state.rightHealth;
@@ -3657,19 +3683,24 @@ export default class AirHockey extends Phaser.Scene {
     });
 
     // Restore paddles
- // this.paddleLeft = this.physics.add.sprite(state.paddleLeftX, state.paddleLeftY, 'blue-paddle').setCircle(35).setImmovable(true);
-          this.paddleRight = this.physics.add.sprite(state.paddleRightX, state.paddleRightY, 'red-paddle')
+    // Get the correct texture for the right paddle based on selected character
+    const characterFrames = ['boss1', 'boss2'];
+    const characterTextures = ['boss-field1', 'boss-field2'];
+    const characterIndex = characterFrames.indexOf(this.selectedCharacter);
+    const rightPaddleTexture = characterIndex !== -1 ? characterTextures[characterIndex] : 'boss-field1';
+    
+    this.paddleRight = this.physics.add.sprite(state.paddleRightX, state.paddleRightY, rightPaddleTexture)
       .setScale(1)
       .setOrigin(0.5, 0.5) // Ensure sprite is centered on its position
       .setImmovable(true);
       
-     this.paddleLeft = this.physics.add.sprite(state.paddleLeftX, state.paddleLeftY, 'blue-paddle')
+    this.paddleLeft = this.physics.add.sprite(state.paddleLeftX, state.paddleLeftY, 'blue-paddle')
       .setScale(1)
       .setOrigin(0.5, 0.5) // Ensure sprite is centered on its position
       .setImmovable(true);
 
     // Dynamically center the collision circle on the boss sprite
-    const bossTexture = this.textures.get('red-paddle');
+    const bossTexture = this.textures.get(rightPaddleTexture);
     const bossFrame = bossTexture.get(0);
 
     // Use the same circle radius for both paddles for consistent collision
