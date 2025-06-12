@@ -67,6 +67,201 @@ const BOSS_TAUNTS = {
   godlike: 'WITNESS MY POWER!'
 };
 
+const UI_CONFIG = {
+  // Screen dimensions
+  SCREEN_WIDTH: 1080,
+  SCREEN_HEIGHT: 1920,
+  PLAY_AREA_HEIGHT: 1280,
+  STATS_AREA_HEIGHT: 640,
+  CENTER_X: 540,
+  
+  // Y positions
+  TITLE_Y: 1320,
+  HEALTH_LABEL_Y: 1420,
+  HEALTH_BAR_Y: 1460,
+  TIME_LABEL_Y: 1480,
+  TIMER_Y: 1520,
+  GAME_INFO_Y: 1580,
+  STATS_CENTER_Y: 1600,
+  INDICATORS_Y: 1680,
+  MODAL_Y: 1700,
+  HELP_ICON_Y: 1750,
+  
+  // X positions
+  BLUE_HEALTH_X: 150,
+  RED_HEALTH_X: 930,
+  BLUE_STATS_X: 270,
+  RED_STATS_X: 810,
+  RED_HEALTH_BAR_X: 630,
+  
+  // Sizes
+  HEALTH_BAR_WIDTH: 300,
+  HEALTH_BAR_HEIGHT: 30,
+  STATS_BG_WIDTH: 540,
+  STATS_BG_HEIGHT: 640,
+  BUTTON_WIDTH: 400,
+  BUTTON_HEIGHT: 200,
+  
+  // Modal positions
+  MODAL_CENTER_Y: 960,
+  BOSS_IMAGE_Y_OFFSET: -200,
+  MODAL_ELEMENT_OFFSETS: {
+    WINNER: 100,
+    SCORE: 200,
+    MESSAGE: 280,
+    RESTART: 350,
+    NEXT: 450
+  }
+};
+
+const COLORS = {
+  // Health bar colors
+  BLUE_HEALTH: ['#00ffff', '#00cccc'],
+  RED_HEALTH: ['#ff69b4', '#e91e63'],
+  HEALTH_BG: 0x1A0D40,
+  
+  // Text colors
+  WHITE: '#ffffff',
+  BLUE: '#4da6ff',
+  RED: '#ff4d4d',
+  GRAY: '#cccccc',
+  DARK_GRAY: '#888888',
+  BLACK: '#000000',
+  GREEN: '#00ff00',
+  ORANGE: '#ffaa44',
+  WARNING_RED: '#ff4444',
+  GOLD: '#FFD700',
+  
+  // Background colors
+  DARK_BG: 0x1a1a1a,
+  
+  // Difficulty colors
+  DIFFICULTY: {
+    beginner: '#44ff44',
+    easy: '#00ff00',
+    medium: '#ffaa00',
+    hard: '#ff0000',
+    extreme: '#ff00ff',
+    impossible: '#ff0000'
+  },
+  
+  // Fire effect colors
+  FIRE_GRADIENT: [0xff0000, 0xff4400, 0xff8800, 0xffaa00, 0xffdd00]
+};
+
+const FONTS = {
+  PRIMARY: 'Commando',
+  FALLBACK: 'Arial, sans-serif',
+  SIZES: {
+    TINY: '14px',
+    SMALL: '16px',
+    MEDIUM: '24px',
+    LARGE: '32px',
+    XLARGE: '48px',
+    HUGE: '56px',
+    GIANT: '80px',
+    COUNTDOWN: '120px'
+  }
+};
+
+const PHYSICS = {
+  // Ball physics
+  INITIAL_BALL_VELOCITY: 350,
+  INITIAL_BALL_Y_VELOCITY: 700,
+  MIN_BALL_SPEED: 400,
+  BALL_BOOST_SPEED: 950,
+  MAX_BALL_SPEED: 2000,
+  BALL_DRAG: 0.002,
+  
+  // Hit effects
+  PADDLE_HIT_BASE_SPEED: 120,
+  PADDLE_HIT_MULTIPLIER: 1.03,
+  PADDLE_HIT_ANGLE_DEGREES: 25,
+  WALL_HIT_SPEED_BOOST: 200,
+  WALL_HIT_MULTIPLIER: 1.08,
+  WALL_HIT_MAX_BOOST: 600,
+  WALL_BOUNCE_DAMPING: 0.98,
+  
+  // Movement smoothness
+  BOT_SMOOTHNESS: 0.08,
+  BOT_EMERGENCY_SMOOTHNESS: 0.15,
+  PLAYER_SMOOTHNESS: 0.15,
+  KEYBOARD_SMOOTHNESS: 0.25,
+  TOUCH_SMOOTHNESS: 0.18,
+  
+  // Speeds
+  KEYBOARD_ACCELERATION: 0.8,
+  KEYBOARD_DAMPING: 0.85,
+  MAX_KEYBOARD_SPEED: 12,
+  MAX_TOUCH_SPEED: 22,
+  MIN_TOUCH_SPEED: 8
+};
+
+const GAME_CONFIG = {
+  // Health and scoring
+  INITIAL_HEALTH: 100,
+  HEALTH_DECREASE: 10,
+  TIMER_BONUS_SECONDS: 15,
+  
+  // Timers
+  GAME_TIMER: 180,
+  TIMER_WARNING_THRESHOLD: 30,
+  TIMER_CRITICAL_THRESHOLD: 60,
+  TEST_TIMER: 10,
+  COUNTDOWN_START: 3,
+  COUNTDOWN_DELAY: 1000,
+  
+  // Sizes
+  PADDLE_RADIUS: 35,
+  PUCK_RADIUS: 50,
+  BALL_SCALE: 0.5,
+  PADDLE_SCALE: 1.0,
+  BOSS_ANIMATION_SCALES: { normal: 1.0, large: 1.1, small: 0.9 }
+};
+
+const ANIMATIONS = {
+  // Durations
+  FLASH: 100,
+  VERY_SHORT: 150,
+  SHORT: 200,
+  STANDARD: 300,
+  MEDIUM: 400,
+  MEDIUM_LONG: 500,
+  LONG: 600,
+  SLIDE: 800,
+  ONE_SECOND: 1000,
+  TWO_SECONDS: 2000,
+  
+  // Easing
+  EASE_OUT: 'Power2.easeOut',
+  QUAD_OUT: 'Quad.easeOut',
+  QUAD_IN: 'Quad.easeIn',
+  SINE_INOUT: 'Sine.easeInOut',
+  BACK_OUT: 'Back.easeOut',
+  BACK_INOUT: 'Back.easeInOut'
+};
+
+const DEPTHS = {
+  BACKGROUND: -1,
+  TRACE: 1,
+  STATS_BG: 2,
+  TEXT: 3,
+  UI_ELEMENTS: 4,
+  PARTICLES_LOW: 5,
+  PARTICLES_HIGH: 9,
+  EFFECTS: 13,
+  BOSS_TAUNT: 20,
+  HELP_OVERLAY: 90,
+  MODAL: 100,
+  WARNING: 110
+};
+
+const PADDING = {
+  INDICATOR: { x: 8, y: 4 },
+  BUTTON: { x: 20, y: 10 },
+  LARGE_BUTTON: { x: 40, y: 15 }
+};
+
 export default class AirHockey extends Phaser.Scene {
   private createStatsText(x: number, y: number, text: string, config: {
     fontSize?: string,
@@ -131,41 +326,83 @@ export default class AirHockey extends Phaser.Scene {
     return paddle;
   }
 
-  // private createFadeTween(target: any, duration = 300, onComplete?: () => void) {
-  //   return this.tweens.add({
-  //     targets: target,
-  //     alpha: 0,
-  //     duration,
-  //     onComplete: () => {
-  //       if (onComplete) onComplete();
-  //       else if (target.destroy) target.destroy();
-  //     }
-  //   });
-  // }
 
-  // private createScaleTween(target: any, scale: number, duration = 300, options: any = {}) {
-  //   return this.tweens.add({
-  //     targets: target,
-  //     scale,
-  //     duration,
-  //     ...options
-  //   });
-  // }
+  private createMoveTween(target: any, x?: number, y?: number, duration = 300, options: any = {}) {
+    const config: any = { targets: target, duration, ...options };
+    if (x !== undefined) config.x = x;
+    if (y !== undefined) config.y = y;
+    return this.tweens.add(config);
+  }
 
-  // private createMoveTween(target: any, x?: number, y?: number, duration = 300, options: any = {}) {
-  //   const config: any = { targets: target, duration, ...options };
-  //   if (x !== undefined) config.x = x;
-  //   if (y !== undefined) config.y = y;
-  //   return this.tweens.add(config);
-  // }
-  private rightHealth = 100;
-  private leftHealth = 100;
+  private createButton(x: number, y: number, width: number, height: number, text: string, onClick: () => void, config: any = {}) {
+    const defaultConfig = {
+      bgColor: COLORS.GOLD,
+      textColor: COLORS.BLACK,
+      fontSize: FONTS.SIZES.XLARGE,
+      depth: DEPTHS.UI_ELEMENTS
+    };
+    const finalConfig = { ...defaultConfig, ...config };
+    
+    const button = this.add.rectangle(x, y, width, height, Phaser.Display.Color.HexStringToColor(finalConfig.bgColor).color);
+    button.setInteractive({ useHandCursor: true });
+    button.setDepth(finalConfig.depth);
+    
+    const buttonText = this.createStatsText(x, y, text, {
+      fontSize: finalConfig.fontSize,
+      color: finalConfig.textColor
+    });
+    buttonText.setDepth(finalConfig.depth + 1);
+    
+    button.on('pointerdown', onClick);
+    button.on('pointerover', () => {
+      button.setScale(1.05);
+      buttonText.setScale(1.05);
+    });
+    button.on('pointerout', () => {
+      button.setScale(1);
+      buttonText.setScale(1);
+    });
+    
+    return { button, buttonText };
+  }
 
-  private botSmoothness = 0.08; 
-  private botEmergencySmoothness = 0.15; 
+  private createModal(width: number, height: number, bgColor: number = 0x000000, alpha: number = 0.8) {
+    const overlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.MODAL_CENTER_Y, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 0.7);
+    overlay.setDepth(DEPTHS.MODAL);
+    
+    const modal = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.MODAL_CENTER_Y, width, height, bgColor, alpha);
+    modal.setDepth(DEPTHS.MODAL + 1);
+    
+    const container = this.add.container(0, 0);
+    container.setDepth(DEPTHS.MODAL + 2);
+    
+    return { overlay, modal, container };
+  }
+
+  private createWarningText(text: string, y: number, duration = ANIMATIONS.TWO_SECONDS) {
+    const warning = this.createStatsText(UI_CONFIG.CENTER_X, y, text, {
+      fontSize: FONTS.SIZES.LARGE,
+      color: COLORS.WARNING_RED
+    });
+    warning.setDepth(DEPTHS.WARNING);
+    
+    this.createMoveTween(warning, undefined, y - 80, duration, {
+      alpha: 0,
+      ease: ANIMATIONS.QUAD_OUT,
+      onComplete: () => warning.destroy()
+    });
+    
+    return warning;
+  }
+
+  private rightHealth = GAME_CONFIG.INITIAL_HEALTH;
+  private leftHealth = GAME_CONFIG.INITIAL_HEALTH;
+
+  private botSmoothness = PHYSICS.BOT_SMOOTHNESS; 
+  private botEmergencySmoothness = PHYSICS.BOT_EMERGENCY_SMOOTHNESS; 
   
   private botDifficulty: 'beginner' | 'easy' | 'medium' | 'hard' | 'extreme' | 'impossible' = 'extreme';
-  private botMaxSpeed = 12; 
+  private botMaxSpeed = PHYSICS.MAX_KEYBOARD_SPEED; 
   private botPredictionAccuracy = 0.7; 
   private botErrorMargin = 20; 
   private botAttackThreshold = 0.6; 
@@ -176,17 +413,17 @@ export default class AirHockey extends Phaser.Scene {
   private botHomePosition = { x: RINK.centerX, y: RINK.botMinY + 200 }; 
   private botLastMissTime = 0; 
 
-  private PADDLE_HIT_BASE_SPEED_INCREASE = 120; 
-  private PADDLE_HIT_SPEED_MULTIPLIER = 1.03; 
-  private MAX_BALL_SPEED = 2000; 
-  private PADDLE_HIT_ANGLE_INFLUENCE_DEGREES = 25; 
+  private PADDLE_HIT_BASE_SPEED_INCREASE = PHYSICS.PADDLE_HIT_BASE_SPEED; 
+  private PADDLE_HIT_SPEED_MULTIPLIER = PHYSICS.PADDLE_HIT_MULTIPLIER; 
+  private MAX_BALL_SPEED = PHYSICS.MAX_BALL_SPEED; 
+  private PADDLE_HIT_ANGLE_INFLUENCE_DEGREES = PHYSICS.PADDLE_HIT_ANGLE_DEGREES; 
 
-  private MIN_BALL_SPEED_THRESHOLD = 400; 
-  private BALL_BOOST_SPEED = 950;         
+  private MIN_BALL_SPEED_THRESHOLD = PHYSICS.MIN_BALL_SPEED; 
+  private BALL_BOOST_SPEED = PHYSICS.BALL_BOOST_SPEED;         
   
-  private WALL_HIT_SPEED_BOOST = 200; 
-  private WALL_HIT_SPEED_MULTIPLIER = 1.08; 
-  private WALL_HIT_MAX_BOOST = 600; 
+  private WALL_HIT_SPEED_BOOST = PHYSICS.WALL_HIT_SPEED_BOOST; 
+  private WALL_HIT_SPEED_MULTIPLIER = PHYSICS.WALL_HIT_MULTIPLIER; 
+  private WALL_HIT_MAX_BOOST = PHYSICS.WALL_HIT_MAX_BOOST; 
 
   private ball!: Phaser.Physics.Arcade.Sprite;
   private paddleLeft!: Phaser.Physics.Arcade.Sprite;
@@ -235,11 +472,11 @@ export default class AirHockey extends Phaser.Scene {
   private paddleStartY = 0;
   private touchControlsSetup = false;
   
-  private playerSmoothness = 0.15; 
+  private playerSmoothness = PHYSICS.PLAYER_SMOOTHNESS; 
   private keyboardVelocityX = 0; 
   private keyboardVelocityY = 0; 
-  private keyboardAcceleration = 0.8; 
-  private keyboardDamping = 0.85; 
+  private keyboardAcceleration = PHYSICS.KEYBOARD_ACCELERATION; 
+  private keyboardDamping = PHYSICS.KEYBOARD_DAMPING; 
 
   private isRedDragging = false;
   private redDragStartX = 0;
@@ -251,10 +488,10 @@ export default class AirHockey extends Phaser.Scene {
   private lastInputType: 'none' | 'keyboard' | 'touch' | 'drag' | 'gamepad' = 'none';
   private inputSwitchCooldown = 100; 
 
-  private playAreaBottom = 1280;
-  private playAreaCenter = 640;
+  private playAreaBottom = UI_CONFIG.PLAY_AREA_HEIGHT;
+  private playAreaCenter = UI_CONFIG.PLAY_AREA_HEIGHT / 2;
   
-  private statsAreaCenter = 1600;
+  private statsAreaCenter = UI_CONFIG.STATS_CENTER_Y;
 
   private paddleLeftTargetX = RINK.centerX;
   private paddleLeftTargetY = RINK.playerMinY + 100;
@@ -264,7 +501,7 @@ export default class AirHockey extends Phaser.Scene {
   private targetTouchX?: number;
   private targetTouchY?: number;
 
-  private gameTimer = 180; 
+  private gameTimer = GAME_CONFIG.GAME_TIMER; 
   private timerText!: Phaser.GameObjects.Text;
   private timerEvent?: Phaser.Time.TimerEvent;
   
@@ -283,7 +520,7 @@ export default class AirHockey extends Phaser.Scene {
   private fireParticles: Phaser.GameObjects.GameObject[] = [];
 
   private countdownText?: Phaser.GameObjects.Text;
-  private countdownValue = 3;
+  private countdownValue = GAME_CONFIG.COUNTDOWN_START;
   private countdownActive = false;
   private gameStarted = false;
 
@@ -410,91 +647,75 @@ export default class AirHockey extends Phaser.Scene {
     
     this.savedGameState = undefined;
 
-    this.physics.world.setBounds(0, 0, 1080, 1280);
+    this.physics.world.setBounds(0, 0, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
     this.physics.world.setBoundsCollision(true, true, true, true);
 
-    this.playingAreaBackground = this.add.rectangle(540, this.playAreaCenter, 1080, 1280, 0xffffff, 0);
-    this.statsBackground = this.add.rectangle(540, this.statsAreaCenter, 1080, 640, 0x1a1a1a, 0.8);
-    this.statsBackground.depth = 1;
+    this.playingAreaBackground = this.add.image(UI_CONFIG.CENTER_X, this.playAreaCenter, 'airhockey-background')
+      .setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
+    this.statsBackground = this.add.rectangle(UI_CONFIG.CENTER_X, this.statsAreaCenter, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT, COLORS.DARK_BG, 0.8);
+    this.statsBackground.depth = DEPTHS.TRACE;
 
-    this.blueStatsBackground = this.add.rectangle(270, this.statsAreaCenter, 540, 640, 0x1a1a1a, 0.8);
-    this.blueStatsBackground.depth = 2;
-    this.redStatsBackground = this.add.rectangle(810, this.statsAreaCenter, 540, 640, 0x1a1a1a, 0.8);
-    this.redStatsBackground.depth = 2;
+    this.blueStatsBackground = this.add.rectangle(UI_CONFIG.BLUE_STATS_X, this.statsAreaCenter, UI_CONFIG.STATS_BG_WIDTH, UI_CONFIG.STATS_BG_HEIGHT, COLORS.DARK_BG, 0.8);
+    this.blueStatsBackground.depth = DEPTHS.STATS_BG;
+    this.redStatsBackground = this.add.rectangle(UI_CONFIG.RED_STATS_X, this.statsAreaCenter, UI_CONFIG.STATS_BG_WIDTH, UI_CONFIG.STATS_BG_HEIGHT, COLORS.DARK_BG, 0.8);
+    this.redStatsBackground.depth = DEPTHS.STATS_BG;
 
-    this.title = this.createStatsText(540, 1320, 'AIR HOCKEY', {
-      fontSize: '56px'
+    this.title = this.createStatsText(UI_CONFIG.CENTER_X, UI_CONFIG.TITLE_Y, 'AIR HOCKEY', {
+      fontSize: FONTS.SIZES.HUGE
     }).setOrigin(0.5, 0);
 
-    this.blueHealthLabel = this.createStatsText(150, 1420, 'Blue Health:', {
-      color: '#4da6ff'
+    this.blueHealthLabel = this.createStatsText(UI_CONFIG.BLUE_HEALTH_X, UI_CONFIG.HEALTH_LABEL_Y, 'Blue Health:', {
+      color: COLORS.BLUE
     }).setOrigin(0, 0.5);
 
     this.blueHealthBar = this.add.graphics();
-    this.blueHealthBar.depth = 4;
+    this.blueHealthBar.depth = DEPTHS.UI_ELEMENTS;
 
-    this.redHealthLabel = this.createStatsText(930, 1420, this.characterName, {
-      color: '#ff4d4d'
+    this.redHealthLabel = this.createStatsText(UI_CONFIG.RED_HEALTH_X, UI_CONFIG.HEALTH_LABEL_Y, this.characterName, {
+      color: COLORS.RED
     }).setOrigin(1, 0.5);
 
     this.redHealthBar = this.add.graphics();
-    this.redHealthBar.depth = 4;
+    this.redHealthBar.depth = DEPTHS.UI_ELEMENTS;
 
-    this.gameInfo = this.add.text(540, 1580, 'Controls: Drag paddles directly OR tap/click to move OR use WASD keys OR gamepad\nBlue paddle: bottom half only - ESC: menu, R: restart, T: test timer (10s), F: test fire effect\nBot Difficulty: Q = BEGINNER, 1 = Easy, 2 = Medium, 3 = Hard, 4 = EXTREME, 5 = IMPOSSIBLE', {
-      fontFamily: 'Commando',
-      fontSize: '16px',
-      color: '#cccccc',
+    this.gameInfo = this.createStatsText(UI_CONFIG.CENTER_X, UI_CONFIG.GAME_INFO_Y, 'Controls: Drag paddles directly OR tap/click to move OR use WASD keys OR gamepad\nBlue paddle: bottom half only - ESC: menu, R: restart, T: test timer (10s), F: test fire effect\nBot Difficulty: Q = BEGINNER, 1 = Easy, 2 = Medium, 3 = Hard, 4 = EXTREME, 5 = IMPOSSIBLE', {
+      fontSize: FONTS.SIZES.SMALL,
+      color: COLORS.GRAY,
       wordWrap: { width: 1000 },
       align: 'center'
     });
-    this.gameInfo.setOrigin(0.5, 0.5);
-    this.gameInfo.depth = 3;
 
-    this.inputModeIndicator = this.add.text(270, 1680, 'Input: None', {
-      fontFamily: 'Commando',
-      fontSize: '14px',
-      color: '#888888',
+    this.inputModeIndicator = this.createStatsText(UI_CONFIG.BLUE_STATS_X, UI_CONFIG.INDICATORS_Y, 'Input: None', {
+      fontSize: FONTS.SIZES.TINY,
+      color: COLORS.DARK_GRAY,
       backgroundColor: 'rgba(0,0,0,0.5)',
-      padding: { x: 8, y: 4 }
+      padding: PADDING.INDICATOR
     });
-    this.inputModeIndicator.setOrigin(0.5, 0.5);
-    this.inputModeIndicator.depth = 3;
     
-    this.botStateIndicator = this.add.text(540, 1680, 'Bot: Defend', {
-      fontFamily: 'Commando',
-      fontSize: '14px',
+    this.botStateIndicator = this.createStatsText(UI_CONFIG.CENTER_X, UI_CONFIG.INDICATORS_Y, 'Bot: Defend', {
+      fontSize: FONTS.SIZES.TINY,
       color: '#ff8888',
       backgroundColor: 'rgba(0,0,0,0.5)',
-      padding: { x: 8, y: 4 }
+      padding: PADDING.INDICATOR
     });
-    this.botStateIndicator.setOrigin(0.5, 0.5);
-    this.botStateIndicator.depth = 3;
     
-    this.botDifficultyIndicator = this.add.text(810, 1680, 'Difficulty: Medium', {
-      fontFamily: 'Commando',
-      fontSize: '14px',
-      color: '#ffaa00',
+    this.botDifficultyIndicator = this.createStatsText(UI_CONFIG.RED_STATS_X, UI_CONFIG.INDICATORS_Y, 'Difficulty: Medium', {
+      fontSize: FONTS.SIZES.TINY,
+      color: COLORS.ORANGE,
       backgroundColor: 'rgba(0,0,0,0.5)',
-      padding: { x: 8, y: 4 }
+      padding: PADDING.INDICATOR
     });
-    this.botDifficultyIndicator.setOrigin(0.5, 0.5);
-    this.botDifficultyIndicator.depth = 3;
 
-    this.timerText = this.add.text(540, 1520, this.formatTime(this.gameTimer), {
-      fontFamily: 'Commando',
-      fontSize: '48px',
-      color: '#ffffff',
-      stroke: '#000000',
+    this.timerText = this.createStatsText(UI_CONFIG.CENTER_X, UI_CONFIG.TIMER_Y, this.formatTime(this.gameTimer), {
+      fontSize: FONTS.SIZES.XLARGE,
+      color: COLORS.WHITE,
+      stroke: COLORS.BLACK,
       strokeThickness: 4
     });
-    this.timerText.setOrigin(0.5, 0.5);
-    this.timerText.depth = 3;
 
-    this.add.text(540, 1480, 'TIME REMAINING', {
-      fontFamily: 'Commando',
-      fontSize: '24px',
-      color: '#cccccc'
-    }).setOrigin(0.5, 0.5).setDepth(3);
+    this.createStatsText(UI_CONFIG.CENTER_X, UI_CONFIG.TIME_LABEL_Y, 'TIME REMAINING', {
+      color: COLORS.GRAY
+    });
 
     this.keyA = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.keyS = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S);
@@ -520,7 +741,7 @@ export default class AirHockey extends Phaser.Scene {
     this.redPaddleStartY = 0;
 
     this.ball = this.physics.add.sprite(RINK.centerX, RINK.centerY, 'puck')
-      .setScale(0.5)
+      .setScale(GAME_CONFIG.BALL_SCALE)
       .setOrigin(0.5, 0.5) 
       .setCircle(RINK.puckRadius, (this.textures.get('puck').get(0).width / 2) - RINK.puckRadius, 
                                  (this.textures.get('puck').get(0).height / 2) - RINK.puckRadius) 
@@ -529,7 +750,7 @@ export default class AirHockey extends Phaser.Scene {
       .setMaxVelocity(this.MAX_BALL_SPEED);
 
     this.ball.setVelocity(0, 0);
-    this.ball.setDamping(true).setDrag(0.002);
+    this.ball.setDamping(true).setDrag(PHYSICS.BALL_DRAG);
 
     this.traceGraphics = this.add.graphics();
     this.traceGraphics.setDepth(1); 
