@@ -51,7 +51,113 @@ const RINK = {
   puckRadius: 50      
 };
 
+const BOT_STATE_CONFIG = {
+  defend: { text: 'Blocking', color: '#4da6ff' },
+  attack: { text: 'Attacking', color: '#ff4444' },
+  wait: { text: 'Planning', color: '#888888' },
+  recover: { text: 'Recovering', color: '#ffaa44' }
+};
+
+const BOSS_TAUNTS = {
+  pathetic: 'Ha! Too easy!',
+  weak: 'You can do better!',
+  average: 'Let\'s see what you got!',
+  powerful: 'Now I\'m serious!',
+  enraged: 'YOU WILL SUFFER!',
+  godlike: 'WITNESS MY POWER!'
+};
+
 export default class AirHockey extends Phaser.Scene {
+  private createStatsText(x: number, y: number, text: string, config: {
+    fontSize?: string,
+    color?: string,
+    fontFamily?: string,
+    backgroundColor?: string,
+    padding?: { x: number, y: number },
+    stroke?: string,
+    strokeThickness?: number,
+    wordWrap?: { width: number },
+    align?: string
+  } = {}) {
+    const defaultConfig = {
+      fontFamily: 'Commando',
+      fontSize: '24px',
+      color: '#ffffff'
+    };
+    return this.add.text(x, y, text, { ...defaultConfig, ...config })
+      .setOrigin(0.5, 0.5)
+      .setDepth(3);
+  }
+
+  // private setupPaddleDrag(paddle: Phaser.GameObjects.Sprite, isPlayer: boolean) {
+  //   const dragData = isPlayer ? {
+  //     dragFlag: 'isDragging',
+  //     dragStartX: 'dragStartX',
+  //     dragStartY: 'dragStartY',
+  //     paddleStartX: 'paddleStartX',
+  //     paddleStartY: 'paddleStartY',
+  //     minY: RINK.playerMinY,
+  //     maxY: RINK.playerMaxY
+  //   } : {
+  //     dragFlag: 'isRedDragging',
+  //     dragStartX: 'redDragStartX',
+  //     dragStartY: 'redDragStartY',
+  //     paddleStartX: 'redPaddleStartX',
+  //     paddleStartY: 'redPaddleStartY',
+  //     minY: RINK.botMinY,
+  //     maxY: RINK.botMaxY
+  //   };
+  //   return dragData;
+  // }
+
+  private createPaddle(x: number, y: number, texture: string): Phaser.Physics.Arcade.Sprite {
+    const paddle = this.physics.add.sprite(x, y, texture)
+      .setScale(1)
+      .setOrigin(0.5, 0.5)
+      .setImmovable(true);
+    
+    const paddleTexture = this.textures.get(texture);
+    const paddleFrame = paddleTexture.get(0);
+    const circleRadius = 35;
+    const offsetX = (paddleFrame.width / 2) - circleRadius;
+    const offsetY = (paddleFrame.height / 2) - circleRadius;
+    
+    (paddle.body as Phaser.Physics.Arcade.Body).setCircle(circleRadius, offsetX, offsetY);
+    (paddle.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
+    
+    paddle.setInteractive();
+    this.input.setDraggable(paddle);
+    
+    return paddle;
+  }
+
+  // private createFadeTween(target: any, duration = 300, onComplete?: () => void) {
+  //   return this.tweens.add({
+  //     targets: target,
+  //     alpha: 0,
+  //     duration,
+  //     onComplete: () => {
+  //       if (onComplete) onComplete();
+  //       else if (target.destroy) target.destroy();
+  //     }
+  //   });
+  // }
+
+  // private createScaleTween(target: any, scale: number, duration = 300, options: any = {}) {
+  //   return this.tweens.add({
+  //     targets: target,
+  //     scale,
+  //     duration,
+  //     ...options
+  //   });
+  // }
+
+  // private createMoveTween(target: any, x?: number, y?: number, duration = 300, options: any = {}) {
+  //   const config: any = { targets: target, duration, ...options };
+  //   if (x !== undefined) config.x = x;
+  //   if (y !== undefined) config.y = y;
+  //   return this.tweens.add(config);
+  // }
   private rightHealth = 100;
   private leftHealth = 100;
 
@@ -316,32 +422,20 @@ export default class AirHockey extends Phaser.Scene {
     this.redStatsBackground = this.add.rectangle(810, this.statsAreaCenter, 540, 640, 0x1a1a1a, 0.8);
     this.redStatsBackground.depth = 2;
 
-    this.title = this.add.text(540, 1320, 'AIR HOCKEY', {
-      fontFamily: 'Commando',
-      fontSize: '56px',
-      color: '#ffffff'
-    });
-    this.title.setOrigin(0.5, 0);
-    this.title.depth = 3;
+    this.title = this.createStatsText(540, 1320, 'AIR HOCKEY', {
+      fontSize: '56px'
+    }).setOrigin(0.5, 0);
 
-    this.blueHealthLabel = this.add.text(150, 1420, 'Blue Health:', {
-      fontFamily: 'Commando',
-      fontSize: '24px',
+    this.blueHealthLabel = this.createStatsText(150, 1420, 'Blue Health:', {
       color: '#4da6ff'
-    });
-    this.blueHealthLabel.setOrigin(0, 0.5);
-    this.blueHealthLabel.depth = 3;
+    }).setOrigin(0, 0.5);
 
     this.blueHealthBar = this.add.graphics();
     this.blueHealthBar.depth = 4;
 
-    this.redHealthLabel = this.add.text(930, 1420, this.characterName, {
-      fontFamily: 'Commando',
-      fontSize: '24px',
+    this.redHealthLabel = this.createStatsText(930, 1420, this.characterName, {
       color: '#ff4d4d'
-    });
-    this.redHealthLabel.setOrigin(1, 0.5);
-    this.redHealthLabel.depth = 3;
+    }).setOrigin(1, 0.5);
 
     this.redHealthBar = this.add.graphics();
     this.redHealthBar.depth = 4;
@@ -454,40 +548,10 @@ export default class AirHockey extends Phaser.Scene {
       }
     });
 
-    this.paddleLeft = this.physics.add.sprite(RINK.centerX, RINK.playerMinY + 100, 'blue-paddle')
-      .setScale(1)
-      .setOrigin(0.5, 0.5) 
-      .setImmovable(true);
-          this.paddleRight = this.physics.add.sprite(RINK.centerX, RINK.botMaxY - 100, 'red-paddle')
-      .setScale(1)
-      .setOrigin(0.5, 0.5) 
-      .setImmovable(true);
+    this.paddleLeft = this.createPaddle(RINK.centerX, RINK.playerMinY + 100, 'blue-paddle');
+    this.paddleRight = this.createPaddle(RINK.centerX, RINK.botMaxY - 100, 'red-paddle');
       
     this.getSelectedCharacter();
-      
-    const bossTexture = this.textures.get('red-paddle');
-    const bossFrame = bossTexture.get(0);
-    
-    const circleRadius = 35;
-    
-    const offsetX = (bossFrame.width / 2) - circleRadius;
-    const offsetY = (bossFrame.height / 2) - circleRadius;
-    (this.paddleRight.body as Phaser.Physics.Arcade.Body).setCircle(circleRadius, offsetX, offsetY);
-    
-    const playerTexture = this.textures.get('blue-paddle');
-    const playerFrame = playerTexture.get(0);
-    const playerCircleRadius = 35;
-    const playerOffsetX = (playerFrame.width / 2) - playerCircleRadius;
-    const playerOffsetY = (playerFrame.height / 2) - playerCircleRadius;
-    (this.paddleLeft.body as Phaser.Physics.Arcade.Body).setCircle(playerCircleRadius, playerOffsetX, playerOffsetY);
-
-    (this.paddleLeft.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
-    (this.paddleRight.body as Phaser.Physics.Arcade.Body).setCollideWorldBounds(true);
-
-    this.paddleLeft.setInteractive();
-    this.input.setDraggable(this.paddleLeft);
-    this.paddleRight.setInteractive();
-    this.input.setDraggable(this.paddleRight);
 
     this.physics.add.collider(this.ball, this.paddleLeft, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
     this.physics.add.collider(this.ball, this.paddleRight, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
@@ -569,40 +633,25 @@ export default class AirHockey extends Phaser.Scene {
       this.timerText.setColor('#ff4444'); 
     });
 
-    this.input.keyboard?.on('keydown-Q', () => {
-      this.setBotDifficulty('beginner');
-      this.showDifficultyChange('BEGINNER');
-      this.playBossTaunt('pathetic');
-    });
-    
-    this.input.keyboard?.on('keydown-ONE', () => {
-      this.setBotDifficulty('easy');
-      this.showDifficultyChange('Easy');
-      this.playBossTaunt('weak');
-    });
-    
-    this.input.keyboard?.on('keydown-TWO', () => {
-      this.setBotDifficulty('medium');
-      this.showDifficultyChange('Medium');
-      this.playBossTaunt('average');
-    });
-    
-    this.input.keyboard?.on('keydown-THREE', () => {
-      this.setBotDifficulty('hard');
-      this.showDifficultyChange('Hard');
-      this.playBossTaunt('powerful');
-    });
-    
-    this.input.keyboard?.on('keydown-FOUR', () => {
-      this.setBotDifficulty('extreme');
-      this.showDifficultyChange('EXTREME');
-      this.playBossTaunt('enraged');
-    });
-    
-    this.input.keyboard?.on('keydown-FIVE', () => {
-      this.setBotDifficulty('impossible');
-      this.showDifficultyChange('IMPOSSIBLE');
-      this.playBossTaunt('godlike');
+    const difficultyKeys: Record<string, { 
+      difficulty: 'beginner' | 'easy' | 'medium' | 'hard' | 'extreme' | 'impossible',
+      display: string,
+      taunt: 'pathetic' | 'weak' | 'average' | 'powerful' | 'enraged' | 'godlike'
+    }> = {
+      'Q': { difficulty: 'beginner', display: 'BEGINNER', taunt: 'pathetic' },
+      'ONE': { difficulty: 'easy', display: 'Easy', taunt: 'weak' },
+      'TWO': { difficulty: 'medium', display: 'Medium', taunt: 'average' },
+      'THREE': { difficulty: 'hard', display: 'Hard', taunt: 'powerful' },
+      'FOUR': { difficulty: 'extreme', display: 'EXTREME', taunt: 'enraged' },
+      'FIVE': { difficulty: 'impossible', display: 'IMPOSSIBLE', taunt: 'godlike' }
+    };
+
+    Object.entries(difficultyKeys).forEach(([key, config]) => {
+      this.input.keyboard?.on(`keydown-${key}`, () => {
+        this.setBotDifficulty(config.difficulty);
+        this.showDifficultyChange(config.display);
+        this.playBossTaunt(config.taunt);
+      });
     });
     
     this.input.keyboard?.on('keydown-F', () => {
@@ -1133,7 +1182,7 @@ export default class AirHockey extends Phaser.Scene {
     }
   }
   
-  private updateBeginnerAIState(ballY: number, ballVelY: number, distance: number, ballSpeed: number) {
+  private updateBeginnerAIState(ballY: number, _ballVelY: number, _distance: number, _ballSpeed: number) {
     
     if (Math.random() < 0.3) {
       this.botState = 'wait';
@@ -1258,7 +1307,7 @@ export default class AirHockey extends Phaser.Scene {
     }
   }
   
-  private calculateDefensivePosition(predicted: {x: number, y: number}, paddleX: number, paddleY: number): {x: number, y: number, urgency: boolean} {
+  private calculateDefensivePosition(predicted: {x: number, y: number}, _paddleX: number, _paddleY: number): {x: number, y: number, urgency: boolean} {
     
     const goalCenterX = RINK.centerX;
     const ballY = this.ball.y;
@@ -1399,12 +1448,12 @@ export default class AirHockey extends Phaser.Scene {
         }
         
         const playerX = this.paddleLeft.x;
-        const playerY = this.paddleLeft.y;
+        // const playerY = this.paddleLeft.y;
         const playerPrevX = this.paddleLeftPrevX;
-        const playerPrevY = this.paddleLeftPrevY;
+        // const playerPrevY = this.paddleLeftPrevY;
         
         const playerVelX = playerX - playerPrevX;
-        const playerVelY = playerY - playerPrevY;
+        // const playerVelY = playerY - playerPrevY;
         
         if (Math.abs(playerVelX) > 2) {
           adjustedX += playerVelX * 3; 
@@ -1811,40 +1860,18 @@ export default class AirHockey extends Phaser.Scene {
   }
 
   private clearOtherInputStates(activeInputType: 'drag' | 'touch' | 'keyboard' | 'gamepad') {
-    switch (activeInputType) {
-      case 'drag':
-        
-        this.isTouchMoving = false;
-        this.targetTouchX = undefined;
-        this.targetTouchY = undefined;
-        this.keyboardVelocityX = 0;
-        this.keyboardVelocityY = 0;
-        this.gamepadVelocityX = 0;
-        this.gamepadVelocityY = 0;
-        break;
-      case 'touch':
-        
-        this.keyboardVelocityX = 0;
-        this.keyboardVelocityY = 0;
-        this.gamepadVelocityX = 0;
-        this.gamepadVelocityY = 0;
-        break;
-      case 'keyboard':
-        
-        this.isTouchMoving = false;
-        this.targetTouchX = undefined;
-        this.targetTouchY = undefined;
-        this.gamepadVelocityX = 0;
-        this.gamepadVelocityY = 0;
-        break;
-      case 'gamepad':
-        
-        this.isTouchMoving = false;
-        this.targetTouchX = undefined;
-        this.targetTouchY = undefined;
-        this.keyboardVelocityX = 0;
-        this.keyboardVelocityY = 0;
-        break;
+    if (activeInputType !== 'touch') {
+      this.isTouchMoving = false;
+      this.targetTouchX = undefined;
+      this.targetTouchY = undefined;
+    }
+    if (activeInputType !== 'keyboard') {
+      this.keyboardVelocityX = 0;
+      this.keyboardVelocityY = 0;
+    }
+    if (activeInputType !== 'gamepad') {
+      this.gamepadVelocityX = 0;
+      this.gamepadVelocityY = 0;
     }
   }
 
@@ -1944,34 +1971,10 @@ export default class AirHockey extends Phaser.Scene {
   private updateBotStateIndicator() {
     if (!this.botStateIndicator || !this.botDifficultyIndicator) return;
     
-    let stateText = 'Boss: ';
-    let stateColor = '#888888';
-    
-    switch (this.botState) {
-      case 'defend':
-        stateText += 'Blocking';
-        stateColor = '#4da6ff'; 
-        this.updateBossAnimation('defend');
-        break;
-      case 'attack':
-        stateText += 'Attacking';
-        stateColor = '#ff4444'; 
-        this.updateBossAnimation('attack');
-        break;
-      case 'wait':
-        stateText += 'Planning';
-        stateColor = '#888888'; 
-        this.updateBossAnimation('wait');
-        break;
-      case 'recover':
-        stateText += 'Recovering';
-        stateColor = '#ffaa44'; 
-        this.updateBossAnimation('recover');
-        break;
-    }
-    
-    this.botStateIndicator.setText(stateText);
-    this.botStateIndicator.setColor(stateColor);
+    const config = BOT_STATE_CONFIG[this.botState];
+    this.botStateIndicator.setText(`Boss: ${config.text}`);
+    this.botStateIndicator.setColor(config.color);
+    this.updateBossAnimation(this.botState);
     
     let diffText = 'Difficulty: ';
     let diffColor = '#888888';
@@ -3533,27 +3536,7 @@ export default class AirHockey extends Phaser.Scene {
     const bubbleX = this.paddleRight.x;
     const bubbleY = this.paddleRight.y - 70;
     
-    let tauntText = '';
-    switch(type) {
-      case 'pathetic':
-        tauntText = 'Ha! Too easy!';
-        break;
-      case 'weak':
-        tauntText = 'You can do better!';
-        break;
-      case 'average':
-        tauntText = 'Let\'s see what you got!';
-        break;
-      case 'powerful':
-        tauntText = 'Now I\'m serious!';
-        break;
-      case 'enraged':
-        tauntText = 'YOU WILL SUFFER!';
-        break;
-      case 'godlike':
-        tauntText = 'WITNESS MY POWER!';
-        break;
-    }
+    const tauntText = BOSS_TAUNTS[type];
     
     const bubble = this.add.graphics();
     bubble.fillStyle(0xffffff, 0.9);
