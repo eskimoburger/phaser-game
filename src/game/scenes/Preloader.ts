@@ -44,6 +44,10 @@ export class Preloader extends Scene {
 
     this.load.image("loading-boss1", "loading-boss-1.svg");
     this.load.image("loading-boss2", "loading-boss-2.svg");
+    
+    // Load modal boss images
+    this.load.image("modal-boss1", "modal-boss1.png");
+    this.load.image("modal-boss2", "modal-boss2.png");
 
     this.load.spritesheet("ghost", "sprites/ghost.png", {
       frameWidth: 1024,

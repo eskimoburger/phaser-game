@@ -73,7 +73,7 @@ export default class AirHockey extends Phaser.Scene {
   private botEmergencySmoothness = 0.15; // Faster movement when in danger
   
   // Bot difficulty system
-  private botDifficulty: 'beginner' | 'easy' | 'medium' | 'hard' | 'extreme' | 'impossible' = 'medium';
+  private botDifficulty: 'beginner' | 'easy' | 'medium' | 'hard' | 'extreme' | 'impossible' = 'extreme';
   private botMaxSpeed = 12; // Will be set by difficulty
   private botPredictionAccuracy = 0.7; // Will be set by difficulty
   private botErrorMargin = 20; // Will be set by difficulty
@@ -109,8 +109,6 @@ export default class AirHockey extends Phaser.Scene {
   private paddleLeft!: Phaser.Physics.Arcade.Sprite;
   private paddleRight!: Phaser.Physics.Arcade.Sprite;
   private background!: Phaser.GameObjects.Image;
-  private rightGoal!: Phaser.GameObjects.Rectangle;
-  private leftGoal!: Phaser.GameObjects.Image;
 
   // UI elements
   private title!: Phaser.GameObjects.Text;
@@ -292,6 +290,8 @@ export default class AirHockey extends Phaser.Scene {
     
     this.load.image("help-icon", "assets/airhockey/help.svg");
     this.load.image("net", "assets/airhockey/net.svg");
+
+  
     
     // Skip audio loading for now to avoid decode errors
     // this.load.audio("wall-sound", ["assets/airhockey/wall_sound.mp3"]);
@@ -510,16 +510,11 @@ export default class AirHockey extends Phaser.Scene {
     this.redPaddleStartX = 0;
     this.redPaddleStartY = 0;
 
-    this.background = this.add.image(540, this.playAreaCenter, 'airhockey-background');
-    this.background.displayHeight = 1280;
-    this.background.displayWidth = 1080;
-    this.background.depth = 0;
+    // this.background = this.add.image(540, this.playAreaCenter, 'airhockey-background').setDepth(0);
+    // this.background.displayHeight = 1280;
+    // this.background.displayWidth = 1080;
+    // this.background.depth = 0;
 
-    this.rightGoal = this.add.rectangle(RINK.centerX, RINK.topGoalY - (155/4), 300, 155, 0xffffff, 0.0);
-    this.rightGoal.depth = 2;
-
-    this.leftGoal = this.add.image(RINK.centerX, RINK.bottomGoalY + (RINK.puckRadius*2) - 70 , 'net').setScale(0.6);
-    this.leftGoal.depth = 2;
 
     // Debug goal lines - visualize goal boundaries
     // this.add.line(0, 0, RINK.minX, RINK.topGoalY, RINK.maxX, RINK.topGoalY, 0xff0000).setOrigin(0, 0).setDepth(5);
@@ -924,47 +919,10 @@ export default class AirHockey extends Phaser.Scene {
       
       const winnerText = this.leftHealth <=0 ? 'RED WINS!!!!!' : 'BLUE WINS!!!!';
       const winnerColor = this.leftHealth <=0 ? '#ff4d4d' : '#4da6ff';
+      const isRedWinner = this.leftHealth <= 0;
 
-      this.win = this.add.text(RINK.centerX, RINK.centerY - 100, winnerText, {
-        fontFamily: 'Commando',
-        fontSize: '80px',
-        color: winnerColor,
-        stroke: '#000000',
-        strokeThickness: 6
-      });
-      this.win.setOrigin(0.5, 0.5);
-      this.win.depth = 10;
-
-      this.gameRestart = this.add.text(RINK.centerX, RINK.centerY + 20, 'Click to Restart Game', {
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '40px',
-        color: 'white',
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        padding: { x: 20, y: 10 },
-        align: 'center'
-      });
-      this.gameRestart.setOrigin(0.5, 0.5);
-      this.gameRestart.depth = 10;
-      this.gameRestart.setInteractive();
-      this.gameRestart.once('pointerdown', () => {
-        console.log('AirHockey: Restart button clicked');
-        if (this.cheer && this.cheer.isPlaying) this.cheer.stop();
-        
-        // Clean up timer
-        if (this.timerEvent) {
-          this.timerEvent.destroy();
-          this.timerEvent = undefined;
-        }
-        
-        // Clean up any existing event listeners
-        this.input.removeAllListeners();
-        
-        // Reset touch controls flag so they get set up again
-        this.touchControlsSetup = false;
-        
-        console.log('AirHockey: Restarting scene...');
-        this.scene.restart();
-      });
+      // Show modal with boss image for winner
+      this.showEndGameModal(isRedWinner, winnerText, winnerColor);
 
       this.ball.body!.stop();
       const leftBody = this.paddleLeft.body as Phaser.Physics.Arcade.Body;
@@ -2485,16 +2443,20 @@ export default class AirHockey extends Phaser.Scene {
     // Determine winner based on health
     let winnerText: string;
     let winnerColor: string;
+    let isRedWinner: boolean;
     
     if (this.leftHealth > this.rightHealth) {
       winnerText = 'BLUE WINS BY TIME!';
       winnerColor = '#4da6ff';
+      isRedWinner = false;
     } else if (this.rightHealth > this.leftHealth) {
       winnerText = 'RED WINS BY TIME!';
       winnerColor = '#ff4d4d';
+      isRedWinner = true;
     } else {
       winnerText = 'TIME UP - TIE GAME!';
       winnerColor = '#ffffff';
+      isRedWinner = false; // Default to blue for tie
     }
 
     // Stop the game
@@ -2504,40 +2466,8 @@ export default class AirHockey extends Phaser.Scene {
     if (this.win) this.win.destroy();
     if (this.gameRestart) this.gameRestart.destroy();
 
-    this.win = this.add.text(RINK.centerX, RINK.centerY - 100, winnerText, {
-      fontFamily: 'Commando',
-      fontSize: '80px',
-      color: winnerColor,
-      stroke: '#000000',
-      strokeThickness: 6
-    });
-    this.win.setOrigin(0.5, 0.5);
-    this.win.depth = 10;
-
-    this.gameRestart = this.add.text(RINK.centerX, RINK.centerY + 20, 'Click to Restart Game', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '40px',
-      color: 'white',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 20, y: 10 },
-      align: 'center'
-    });
-    this.gameRestart.setOrigin(0.5, 0.5);
-    this.gameRestart.depth = 10;
-    this.gameRestart.setInteractive();
-    this.gameRestart.once('pointerdown', () => {
-      console.log('AirHockey: Restart button clicked');
-      if (this.cheer && this.cheer.isPlaying) this.cheer.stop();
-      
-      // Clean up any existing event listeners
-      this.input.removeAllListeners();
-      
-      // Reset touch controls flag so they get set up again
-      this.touchControlsSetup = false;
-      
-      console.log('AirHockey: Restarting scene...');
-      this.scene.restart();
-    });
+    // Show modal with boss image for winner
+    this.showEndGameModal(isRedWinner, winnerText, winnerColor);
 
     // Stop puck and paddles
     this.ball.body!.stop();
@@ -3637,20 +3567,12 @@ export default class AirHockey extends Phaser.Scene {
     this.touchControlsSetup = false;
 
     // Recreate game objects
-    this.background = this.add.image(540, this.playAreaCenter, 'airhockey-background');
-    this.background.displayHeight = 1280;
-    this.background.displayWidth = 1080;
-    this.background.depth = 0;
+    // this.background = this.add.image(540, this.playAreaCenter, 'airhockey-background');
+    // this.background.displayHeight = 1280;
+    // this.background.displayWidth = 1080;
+    // this.background.depth = 0;
 
-    this.rightGoal = this.add.rectangle(RINK.centerX, RINK.topGoalY - (155/4), 300, 155, 0xffffff, 0.0);
-    this.rightGoal.depth = 2;
 
-    this.leftGoal = this.add.image(RINK.centerX, RINK.bottomGoalY + (RINK.puckRadius*2) - 70 , 'net').setScale(0.6);
-    this.leftGoal.depth = 2;
-
-    // Debug goal lines
-    this.add.line(0, 0, RINK.minX, RINK.topGoalY, RINK.maxX, RINK.topGoalY, 0xff0000).setOrigin(0, 0).setDepth(5);
-    this.add.line(0, 0, RINK.minX, RINK.bottomGoalY, RINK.maxX, RINK.bottomGoalY, 0x0000ff).setOrigin(0, 0).setDepth(5);
 
     // Restore ball
     this.ball = this.physics.add.sprite(state.ballX, state.ballY, 'puck')
@@ -3730,6 +3652,29 @@ export default class AirHockey extends Phaser.Scene {
 
     this.physics.add.collider(this.ball, this.paddleLeft, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
     this.physics.add.collider(this.ball, this.paddleRight, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
+
+    // Reset ball and paddle positions to starting positions
+    this.ball.setPosition(RINK.centerX, RINK.centerY);
+    this.ball.setVelocity(0, 0);
+
+    // Reset paddle positions
+    const blueStartX = RINK.centerX;
+    const blueStartY = RINK.playerMinY + 100;
+    const redStartX = RINK.centerX;
+    const redStartY = RINK.botMaxY - 100;
+
+    this.paddleLeft.setPosition(blueStartX, blueStartY);
+    this.paddleRight.setPosition(redStartX, redStartY);
+
+    // Reset paddle target positions
+    this.paddleLeftTargetX = blueStartX;
+    this.paddleLeftTargetY = blueStartY;
+
+    // Reset paddle previous positions
+    this.paddleLeftPrevX = blueStartX;
+    this.paddleLeftPrevY = blueStartY;
+    this.paddleRightPrevX = redStartX;
+    this.paddleRightPrevY = redStartY;
 
     // Restore audio placeholders
     this.puckhit = { play: () => {}, isPlaying: false } as any;
@@ -3843,11 +3788,19 @@ export default class AirHockey extends Phaser.Scene {
 
     this.setupTouchControls();
     this.updateHealthBars();
-    this.setBotDifficulty(state.botDifficulty);
+    // Always set bot difficulty to 'hard' when returning from minigame
+    this.setBotDifficulty('hard');
     this.botState = state.botState;
 
-    // Resume game timer
-    this.startGameTimer();
+    // Start countdown instead of immediately resuming
+    this.gameStarted = false;
+    this.countdownActive = false;
+    this.countdownValue = 3;
+    
+    // Start countdown after a brief delay
+    this.time.delayedCall(500, () => {
+      this.startCountdown();
+    });
     
     // Activate fire effect if needed
     if (miniGameSuccess) {
@@ -4339,9 +4292,9 @@ export default class AirHockey extends Phaser.Scene {
           
           // Create background image - this becomes the new playing area background
           const bgImage = this.add.image(540, this.playAreaCenter, this.characterBackground)
-            .setAlpha(0.4)  // Semi-transparent (increased from 0.2 for better visibility)
+            .setAlpha(1)  // Semi-transparent (increased from 0.2 for better visibility)
             .setDisplaySize(1080, 1280) // Fit to play area
-            .setDepth(0);   // Make sure it's behind game elements
+            .setDepth(-1);   // Make sure it's behind game elements
             
           // Set the background image as the playing area background reference
           this.playingAreaBackground = bgImage;
@@ -4361,5 +4314,155 @@ export default class AirHockey extends Phaser.Scene {
     if (this.redHealthLabel) {
       this.redHealthLabel.setText(this.characterName);
     }
+  }
+
+  private showEndGameModal(isRedWinner: boolean, winnerText: string, winnerColor: string) {
+    // Create overlay background
+    const overlay = this.add.rectangle(540, 960, 1080, 1920, 0x000000, 0.8);
+    overlay.setDepth(100);
+    
+    // Create modal container
+    const modalContainer = this.add.container(540, 960);
+    modalContainer.setDepth(101);
+    
+    // Add boss image based on selected character - using modal-boss images
+    const modalBossKey = this.selectedCharacter === 'boss1' ? 'modal-boss1' : 'modal-boss2';
+    const bossImage = this.add.image(0, -200, modalBossKey);
+    bossImage.setScale(0.5); // Adjust scale as needed for modal images
+    
+    // Winner text (always blue)
+    this.win = this.add.text(0, 100, winnerText, {
+      fontFamily: 'Commando',
+      fontSize: '80px',
+      color: '#4da6ff',  // Always blue color
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    this.win.setOrigin(0.5, 0.5);
+    
+    // Calculate goals from health (each goal = 10 damage)
+    const blueGoals = Math.floor((100 - this.rightHealth) / 10);
+    const redGoals = Math.floor((100 - this.leftHealth) / 10);
+    
+    // Score display container for different colors
+    const scoreContainer = this.add.container(0, 200);
+    
+    // Blue score - color based on winner
+    const blueScoreText = this.add.text(-40, 0, `${blueGoals}`, {
+      fontFamily: 'Commando',
+      fontSize: '64px',
+      color: !isRedWinner ? '#4da6ff' : '#ffffff',  // Blue if winner, white if loser
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    blueScoreText.setOrigin(1, 0.5);
+    
+    // Colon separator
+    const colonText = this.add.text(0, 0, ':', {
+      fontFamily: 'Commando',
+      fontSize: '64px',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    colonText.setOrigin(0.5, 0.5);
+    
+    // Red score - color based on winner
+    const redScoreText = this.add.text(40, 0, `${redGoals}`, {
+      fontFamily: 'Commando',
+      fontSize: '64px',
+      color: isRedWinner ? '#ff4d4d' : '#ffffff',  // Red if winner, white if loser
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    redScoreText.setOrigin(0, 0.5);
+    
+    scoreContainer.add([blueScoreText, colonText, redScoreText]);
+    
+    // Victory message
+    const victoryMessage = this.add.text(0, 280, isRedWinner ? 'The Boss Triumphs!' : 'Hero Saves the Day!', {
+      fontFamily: 'Commando',
+      fontSize: '36px',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 4
+    });
+    victoryMessage.setOrigin(0.5, 0.5);
+    
+    // Restart button
+    this.gameRestart = this.add.text(0, 350, 'Click to Restart Game', {
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '40px',
+      color: 'white',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      padding: { x: 20, y: 10 },
+      align: 'center'
+    });
+    this.gameRestart.setOrigin(0.5, 0.5);
+    this.gameRestart.setInteractive();
+    
+    // Next button - positioned at bottom of modal
+    const nextButton = this.add.text(0, 450, 'NEXT', {
+      fontFamily: 'Commando',
+      fontSize: '48px',
+      color: '#FFD700',
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      padding: { x: 40, y: 15 },
+      stroke: '#000000',
+      strokeThickness: 4
+    });
+    nextButton.setOrigin(0.5, 0.5);
+    nextButton.setInteractive();
+    
+    // Add hover effect for next button
+    nextButton.on('pointerover', () => {
+      nextButton.setScale(1.1);
+      nextButton.setColor('#FFFF00');
+    });
+    
+    nextButton.on('pointerout', () => {
+      nextButton.setScale(1);
+      nextButton.setColor('#FFD700');
+    });
+    
+    // Next button click handler
+    nextButton.on('pointerdown', () => {
+      console.log('AirHockey: Next button clicked');
+      // Return to character select screen
+      this.scene.start('CharacterSelect');
+    });
+    
+    // Add all elements to modal container (removed modalBg)
+    modalContainer.add([bossImage, this.win, scoreContainer, victoryMessage, this.gameRestart, nextButton]);
+    
+    // Animate modal entrance
+    modalContainer.setScale(0);
+    this.tweens.add({
+      targets: modalContainer,
+      scale: 1,
+      duration: 500,
+      ease: 'Back.easeOut'
+    });
+    
+    // Restart game handler
+    this.gameRestart.once('pointerdown', () => {
+      console.log('AirHockey: Restart button clicked');
+      if (this.cheer && this.cheer.isPlaying) this.cheer.stop();
+      
+      // Clean up timer
+      if (this.timerEvent) {
+        this.timerEvent.destroy();
+        this.timerEvent = undefined;
+      }
+      
+      // Clean up any existing event listeners
+      this.input.removeAllListeners();
+      
+      // Reset touch controls flag so they get set up again
+      this.touchControlsSetup = false;
+      
+      console.log('AirHockey: Restarting scene...');
+      this.scene.restart();
+    });
   }
 }
