@@ -80,7 +80,7 @@ const UI_CONFIG = {
   HEALTH_LABEL_Y: 1350,
   HEALTH_BAR_Y: 1350,
   TIME_LABEL_Y: 1380,
-  TIMER_Y: 1380,
+  TIMER_Y: 1340,
   GAME_INFO_Y: 1580,
   STATS_CENTER_Y: 1600,
   INDICATORS_Y: 1680,
@@ -717,6 +717,9 @@ export default class AirHockey extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
     this.physics.world.setBoundsCollision(true, true, true, true);
 
+    // Load selected character data before creating backgrounds
+    this.loadSelectedCharacterData();
+
     this.playingAreaBackground = this.add.image(UI_CONFIG.CENTER_X, this.playAreaCenter, 'airhockey-background')
       .setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
     const statsBoss = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
@@ -862,8 +865,8 @@ export default class AirHockey extends Phaser.Scene {
     this.paddleLeft = this.createPaddle(RINK.centerX, RINK.playerMinY + 100, 'blue-paddle');
     this.paddleRight = this.createPaddle(RINK.centerX, RINK.botMaxY - 100, 'red-paddle');
     
-    // Load selected character after paddles are created
-    this.getSelectedCharacter();
+    // Update paddle textures and background after paddles are created
+    this.applySelectedCharacter();
     
     this.physics.add.collider(this.ball, this.paddleLeft, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
     this.physics.add.collider(this.ball, this.paddleRight, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
@@ -4014,7 +4017,76 @@ export default class AirHockey extends Phaser.Scene {
     this.lastInputTime = this.time.now;
   }
 
-    private getSelectedCharacter(): void {
+    private loadSelectedCharacterData(): void {
+    // Load selected character from localStorage and set basic properties
+    const savedCharacter = localStorage.getItem('selectedCharacter');
+    
+    if (savedCharacter) {
+      this.selectedCharacter = savedCharacter;
+    } else {
+      // Set default character if none is saved
+      this.selectedCharacter = 'boss1';
+    }
+      
+    const characterNames = ['Lady Delayna', 'Phantom Tax'];
+    const characterFrames = ['boss1', 'boss2'];
+    const characterBackgrounds = ['boss-bg1', 'boss-bg2'];
+    const characterIndex = characterFrames.indexOf(this.selectedCharacter);
+      
+    if (characterIndex !== -1) {
+      this.characterName = characterNames[characterIndex];
+      this.characterBackground = characterBackgrounds[characterIndex];
+    }
+  }
+
+  private applySelectedCharacter(): void {
+    const characterFrames = ['boss1', 'boss2'];
+    const characterTextures = ['boss-field1', 'boss-field2'];
+    const characterIndex = characterFrames.indexOf(this.selectedCharacter);
+      
+    if (characterIndex !== -1) {
+      const paddleTexture = characterTextures[characterIndex];
+      // Set paddle texture if textures are ready
+      if(this.paddleRight && this.paddleRight.scene) {
+        if(this.textures && this.textures.exists(paddleTexture)) {
+          try {
+            this.paddleRight.setTexture(paddleTexture);
+          } catch (error) {
+            console.warn('Failed to set paddle texture:', error);
+          }
+        } else {
+          // Try again after a short delay
+          this.time.delayedCall(100, () => {
+            if(this.paddleRight && this.paddleRight.scene && this.textures && this.textures.exists(paddleTexture)) {
+              try {
+                this.paddleRight.setTexture(paddleTexture);
+              } catch (error) {
+                console.warn('Failed to set paddle texture (delayed):', error);
+              }
+            }
+          });
+        }
+      }
+      
+      // Update background
+      if(this.playingAreaBackground) {
+        this.playingAreaBackground.destroy();
+        
+        const bgImage = this.add.image(540, this.playAreaCenter, this.characterBackground)
+          .setAlpha(1)  
+          .setDisplaySize(1080, 1280) 
+          .setDepth(-1);   
+          
+        this.playingAreaBackground = bgImage;
+      }
+    }
+    
+    if (this.redHealthLabel) {
+      this.redHealthLabel.setText(this.characterName);
+    }
+  }
+
+  private getSelectedCharacter(): void {
     
     const savedCharacter = localStorage.getItem('selectedCharacter');
     
