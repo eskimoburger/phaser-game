@@ -95,8 +95,8 @@ const UI_CONFIG = {
   RED_HEALTH_BAR_X: 630,
   
   // Sizes
-  HEALTH_BAR_WIDTH: 300,
-  HEALTH_BAR_HEIGHT: 30,
+  HEALTH_BAR_WIDTH: 420,
+  HEALTH_BAR_HEIGHT: 80,
   STATS_BG_WIDTH: 540,
   STATS_BG_HEIGHT: 640,
   BUTTON_WIDTH: 400,
@@ -445,7 +445,7 @@ export default class AirHockey extends Phaser.Scene {
   
 
   private playingAreaBackground!: Phaser.GameObjects.GameObject;
-  private statsBackground!: Phaser.GameObjects.Rectangle;
+  private statsBackground!: Phaser.GameObjects.Image;
   private blueStatsBackground!: Phaser.GameObjects.Rectangle;
   private redStatsBackground!: Phaser.GameObjects.Rectangle;
 
@@ -577,6 +577,8 @@ export default class AirHockey extends Phaser.Scene {
     this.load.image("boss-field2", "assets/characters/boss-field2.png");
     this.load.image("boss-bg1", "assets/background/boss1.png");
     this.load.image("boss-bg2", "assets/background/boss2.png");
+    this.load.image("stats-boss1", "assets/characters/boss-btm-1.png");
+    this.load.image("stats-boss2", "assets/characters/boss-btm-2.png");
     
     this.load.image("help-icon", "assets/airhockey/help.svg");
     this.load.image("net", "assets/airhockey/net.svg");
@@ -650,10 +652,16 @@ export default class AirHockey extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
     this.physics.world.setBoundsCollision(true, true, true, true);
 
+    // Load selected character first before creating backgrounds
+    this.getSelectedCharacter();
+
     this.playingAreaBackground = this.add.image(UI_CONFIG.CENTER_X, this.playAreaCenter, 'airhockey-background')
       .setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
-    this.statsBackground = this.add.rectangle(UI_CONFIG.CENTER_X, this.statsAreaCenter, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT, COLORS.DARK_BG, 0.8);
-    this.statsBackground.depth = DEPTHS.TRACE;
+    const modalBossKey = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
+    this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, modalBossKey);
+    this.statsBackground.setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT);
+    this.statsBackground.setOrigin(0.5, 0.5);
+    this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
 
     this.blueStatsBackground = this.add.rectangle(UI_CONFIG.BLUE_STATS_X, this.statsAreaCenter, UI_CONFIG.STATS_BG_WIDTH, UI_CONFIG.STATS_BG_HEIGHT, COLORS.DARK_BG, 0.8);
     this.blueStatsBackground.depth = DEPTHS.STATS_BG;
@@ -771,9 +779,7 @@ export default class AirHockey extends Phaser.Scene {
 
     this.paddleLeft = this.createPaddle(RINK.centerX, RINK.playerMinY + 100, 'blue-paddle');
     this.paddleRight = this.createPaddle(RINK.centerX, RINK.botMaxY - 100, 'red-paddle');
-      
     this.getSelectedCharacter();
-
     this.physics.add.collider(this.ball, this.paddleLeft, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
     this.physics.add.collider(this.ball, this.paddleRight, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
 
@@ -1742,10 +1748,15 @@ export default class AirHockey extends Phaser.Scene {
   }
   
   private updateHealthBars() {
+    // Calculate positions to center the health bars under their labels with the new 400px width
+    // Blue health bar: center it under the "Blue Health:" label
+    const blueHealthX = UI_CONFIG.BLUE_HEALTH_X - (UI_CONFIG.HEALTH_BAR_WIDTH / 4);
+    // Red health bar: center it under the character name label (right-aligned)
+    const redHealthX = UI_CONFIG.RED_HEALTH_X - UI_CONFIG.HEALTH_BAR_WIDTH + (UI_CONFIG.HEALTH_BAR_WIDTH / 4);
     
-    this.updateHealthBar(this.blueHealthBar, this.leftHealth, 150, 1460, '#00ffff', '#00cccc', false, false);
+    this.updateHealthBar(this.blueHealthBar, this.leftHealth, blueHealthX, UI_CONFIG.HEALTH_BAR_Y, '#00ffff', '#00cccc', false, false);
     
-    this.updateHealthBar(this.redHealthBar, this.rightHealth, 630, 1460, '#ff69b4', '#e91e63', true, true);
+    this.updateHealthBar(this.redHealthBar, this.rightHealth, redHealthX, UI_CONFIG.HEALTH_BAR_Y, '#ff69b4', '#e91e63', true, true);
   }
 
   private triggerHealthLossBlink(player: 'blue' | 'red') {
@@ -1808,7 +1819,7 @@ export default class AirHockey extends Phaser.Scene {
       0xffffff, 
       0.3
     );
-    overlayEffect.setDepth(targetBackground.depth + 0.5);
+    overlayEffect.setDepth(DEPTHS.EFFECTS);
     
     this.tweens.add({
       targets: overlayEffect,
@@ -1824,8 +1835,8 @@ export default class AirHockey extends Phaser.Scene {
   private updateHealthBar(healthBar: Phaser.GameObjects.Graphics, health: number, x: number, y: number, topColor: string, bottomColor: string, reverse: boolean = false, fillFromRight: boolean = false) {
     healthBar.clear();
     
-    const barWidth = 300;
-    const barHeight = 30;
+    const barWidth = UI_CONFIG.HEALTH_BAR_WIDTH;
+    const barHeight = UI_CONFIG.HEALTH_BAR_HEIGHT;
     const skewAmount = barHeight * 0.1; 
     const borderWidth = 2;
     
@@ -2688,7 +2699,7 @@ export default class AirHockey extends Phaser.Scene {
       });
     } else if (difficulty === 'IMPOSSIBLE') {
       
-      const flashOverlay = this.add.rectangle(RINK.centerX, RINK.centerY, 1080, 1280, 0xff0000, 0.3);
+      const flashOverlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0xff0000, 0.3);
       flashOverlay.setDepth(20);
       
       this.tweens.add({
@@ -2906,7 +2917,7 @@ export default class AirHockey extends Phaser.Scene {
     
     this.pauseGame();
     
-    const darkOverlay = this.add.rectangle(RINK.centerX, RINK.centerY, RINK.maxX * 2, RINK.bottomGoalY * 2, 0x000000, 0.5);
+    const darkOverlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 0.5);
     darkOverlay.setDepth(90); 
     
     this.slidingHelpButton = this.add.container(-400, RINK.centerY);
@@ -2958,7 +2969,7 @@ export default class AirHockey extends Phaser.Scene {
       });
     });
     
-    const bgClickArea = this.add.rectangle(RINK.centerX, RINK.centerY, RINK.maxX * 2, RINK.bottomGoalY * 2, 0x000000, 0.01);
+    const bgClickArea = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 0.01);
     bgClickArea.setInteractive();
     bgClickArea.setDepth(95); 
     bgClickArea.on('pointerdown', () => {
@@ -3172,8 +3183,11 @@ export default class AirHockey extends Phaser.Scene {
       this.playingAreaBackground = this.add.rectangle(540, this.playAreaCenter, 1080, 1280,  0xffffff, 0);
     }
     
-    this.statsBackground = this.add.rectangle(540, this.statsAreaCenter, 1080, 640, 0x1a1a1a, 0.8);
-    this.statsBackground.depth = 1;
+    const modalBossKey = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
+    this.statsBackground = this.add.image(540, this.statsAreaCenter, modalBossKey)
+      .setDisplaySize(1080, 640)
+      .setOrigin(0.5, 0.5)
+      .setDepth(1);
 
     this.blueStatsBackground = this.add.rectangle(270, this.statsAreaCenter, 540, 640, 0x1a1a1a, 0.8);
     this.blueStatsBackground.depth = 2;
@@ -3692,7 +3706,7 @@ export default class AirHockey extends Phaser.Scene {
       }
     });
     
-    const flashOverlay = this.add.rectangle(RINK.centerX, RINK.centerY, 1080, 1280, 0xff4400, 0.4);
+    const flashOverlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0xff4400, 0.4);
     flashOverlay.setDepth(13);
     
     this.tweens.add({
@@ -3916,10 +3930,10 @@ export default class AirHockey extends Phaser.Scene {
 
   private showEndGameModal(isRedWinner: boolean, winnerText: string) {
     
-    const overlay = this.add.rectangle(540, 960, 1080, 1920, 0x000000, 0.8);
+    const overlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 0.8);
     overlay.setDepth(100);
     
-    const modalContainer = this.add.container(540, 960);
+    const modalContainer = this.add.container(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2);
     modalContainer.setDepth(101);
     
     const modalBossKey = this.selectedCharacter === 'boss1' ? 'modal-boss1' : 'modal-boss2';
