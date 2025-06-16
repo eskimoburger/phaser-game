@@ -4158,99 +4158,62 @@ export default class AirHockey extends Phaser.Scene {
     
     const modalBossKey = this.selectedCharacter === 'boss1' ? 'modal-boss1' : 'modal-boss2';
     const bossImage = this.add.image(0, -200, modalBossKey);
-    bossImage.setScale(0.5); 
-    
-    this.win = this.add.text(0, 100, winnerText, {
-      fontFamily: 'Commando',
-      fontSize: '80px',
-      color: '#4da6ff',  
-      stroke: '#000000',
-      strokeThickness: 6
-    });
-    this.win.setOrigin(0.5, 0.5);
+    bossImage.setScale(0.5);
     
     const blueGoals = Math.floor((100 - this.rightHealth) / 10);
     const redGoals = Math.floor((100 - this.leftHealth) / 10);
     
-    const scoreContainer = this.add.container(0, 200);
+    const scoreContainer = this.add.container(0, 300);
     
-    const blueScoreText = this.add.text(-40, 0, `${blueGoals}`, {
+    const blueScoreText = this.add.text(-80, -580, `${blueGoals}`, {
       fontFamily: 'Commando',
-      fontSize: '64px',
-      color: !isRedWinner ? '#4da6ff' : '#ffffff',  
+      fontSize: '72px',
+      color: !isRedWinner ? '#12D6E2' : '#ffffff',  
       stroke: '#000000',
       strokeThickness: 6
     });
     blueScoreText.setOrigin(1, 0.5);
     
-    const colonText = this.add.text(0, 0, ':', {
-      fontFamily: 'Commando',
-      fontSize: '64px',
-      color: '#ffffff',
-      stroke: '#000000',
-      strokeThickness: 6
-    });
-    colonText.setOrigin(0.5, 0.5);
+    // const colonText = this.add.text(0, 0, ':', {
+    //   fontFamily: 'Commando',
+    //   fontSize: '64px',
+    //   color: '#ffffff',
+    //   stroke: '#000000',
+    //   strokeThickness: 6
+    // });
+    // colonText.setOrigin(0.5, 0.5);
     
-    const redScoreText = this.add.text(40, 0, `${redGoals}`, {
+    const redScoreText = this.add.text(80, -580, `${redGoals}`, {
       fontFamily: 'Commando',
-      fontSize: '64px',
-      color: isRedWinner ? '#ff4d4d' : '#ffffff',  
+      fontSize: '72px',
+      color: isRedWinner ? '#FF4D4D' : '#ffffff',  
       stroke: '#000000',
       strokeThickness: 6
     });
     redScoreText.setOrigin(0, 0.5);
     
-    scoreContainer.add([blueScoreText, colonText, redScoreText]);
+    scoreContainer.add([blueScoreText, redScoreText]);
     
-    const victoryMessage = this.add.text(0, 280, isRedWinner ? 'The Boss Triumphs!' : 'Hero Saves the Day!', {
-      fontFamily: 'Commando',
-      fontSize: '36px',
-      color: '#ffffff',
-      stroke: '#000000',
-      strokeThickness: 4
-    });
-    victoryMessage.setOrigin(0.5, 0.5);
-    
-    this.gameRestart = this.add.text(0, 350, 'Click to Restart Game', {
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '40px',
-      color: 'white',
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      padding: { x: 20, y: 10 },
-      align: 'center'
-    });
-    this.gameRestart.setOrigin(0.5, 0.5);
-    this.gameRestart.setInteractive();
-    
-    const nextButton = this.add.text(0, 450, 'NEXT', {
-      fontFamily: 'Commando',
-      fontSize: '48px',
-      color: '#FFD700',
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      padding: { x: 40, y: 15 },
-      stroke: '#000000',
-      strokeThickness: 4
-    });
+    const nextButton = this.add.image(0, 400, 'next-large-button');
+    nextButton.setDisplaySize(900, 136);
     nextButton.setOrigin(0.5, 0.5);
     nextButton.setInteractive();
     
     nextButton.on('pointerover', () => {
-      nextButton.setScale(1.1);
-      nextButton.setColor('#FFFF00');
+      nextButton.setScale(1.05);
+      nextButton.setTint(0xFFFFAA);
     });
     
     nextButton.on('pointerout', () => {
       nextButton.setScale(1);
-      nextButton.setColor('#FFD700');
+      nextButton.clearTint();
     });
     
     nextButton.on('pointerdown', () => {
-      
-      this.scene.start('CharacterSelect');
+      this.showNextModal();
     });
     
-    modalContainer.add([bossImage, this.win, scoreContainer, victoryMessage, this.gameRestart, nextButton]);
+    modalContainer.add([bossImage, scoreContainer, nextButton]);
     
     modalContainer.setScale(0);
     this.tweens.add({
@@ -4260,14 +4223,52 @@ export default class AirHockey extends Phaser.Scene {
       ease: 'Back.easeOut'
     });
     
-    this.gameRestart.once('pointerdown', () => {
-      if (this.cheer && this.cheer.isPlaying) this.cheer.stop();
+    // // Add click handler to overlay to restart the game
+    // overlay.setInteractive();
+    // overlay.once('pointerdown', () => {
+    //   if (this.cheer && this.cheer.isPlaying) this.cheer.stop();
       
-      // Use centralized cleanup
-      this.cleanupForRestart();
+    //   // Use centralized cleanup
+    //   this.cleanupForRestart();
       
-      // Restart the scene
-      this.scene.restart();
+    //   // Restart the scene
+    //   this.scene.restart();
+    // });
+  }
+
+  private showNextModal(): void {
+    // Create a new modal overlay
+    const nextOverlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 0.9);
+    nextOverlay.setDepth(110);
+    nextOverlay.setInteractive();
+    
+    const nextModalContainer = this.add.container(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2);
+    nextModalContainer.setDepth(111);
+    
+    // Add modal content here
+    const modalTitle = this.add.text(0, -200, 'NEXT LEVEL', {
+      fontFamily: 'Commando',
+      fontSize: '64px',
+      color: '#FFD700',
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    modalTitle.setOrigin(0.5, 0.5);
+    
+    nextModalContainer.add([modalTitle]);
+    
+    // Add click handler to overlay to go to main menu
+    nextOverlay.on('pointerdown', () => {
+      this.scene.start('MainMenu');
+    });
+    
+    // Animate modal entrance
+    nextModalContainer.setScale(0);
+    this.tweens.add({
+      targets: nextModalContainer,
+      scale: 1,
+      duration: 500,
+      ease: 'Back.easeOut'
     });
   }
 }

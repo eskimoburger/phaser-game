@@ -66,6 +66,7 @@ export class Preloader extends Scene {
     this.load.image("cart", "matching-game/cart.png");
 
     this.load.image("help-icon", "help-icon.png");
+    this.load.image("next-large-button", "next-large-button.png");
   }
 
   create() {
