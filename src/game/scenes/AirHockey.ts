@@ -395,6 +395,48 @@ export default class AirHockey extends Phaser.Scene {
     return warning;
   }
 
+  private cleanupForRestart() {
+    // Clean up timers
+    if (this.timerEvent) {
+      this.timerEvent.destroy();
+      this.timerEvent = undefined;
+    }
+    
+    // Clear saved game state
+    this.savedGameState = undefined;
+    
+    // Destroy sliding help button if it exists
+    if (this.slidingHelpButton) {
+      this.slidingHelpButton.destroy();
+      this.slidingHelpButton = undefined;
+    }
+    
+    // Kill all tweens
+    this.tweens.killAll();
+    
+    // Remove fire effects
+    if (this.puckFireActive) {
+      this.removeFireEffect();
+    }
+    
+    // Clear ball trace
+    this.ballTracePoints = [];
+    if (this.traceGraphics) {
+      this.traceGraphics.clear();
+    }
+    
+    // Remove all input listeners
+    this.input.removeAllListeners();
+    this.touchControlsSetup = false;
+    
+    // Reset game state flags
+    this.gamePaused = false;
+    this.slidingHelpShown = false;
+    this.miniGameUsed = false;
+    this.gameStarted = false;
+    this.countdownActive = false;
+  }
+
   private rightHealth = GAME_CONFIG.INITIAL_HEALTH;
   private leftHealth = GAME_CONFIG.INITIAL_HEALTH;
 
@@ -445,7 +487,7 @@ export default class AirHockey extends Phaser.Scene {
   
 
   private playingAreaBackground!: Phaser.GameObjects.GameObject;
-  private statsBackground!: Phaser.GameObjects.Image;
+  private statsBackground!: Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
   private blueStatsBackground!: Phaser.GameObjects.Rectangle;
   private redStatsBackground!: Phaser.GameObjects.Rectangle;
 
@@ -587,6 +629,29 @@ export default class AirHockey extends Phaser.Scene {
 
   create(data?: { miniGameResult?: boolean; resumeGame?: boolean }) {
     
+    // Clear any lingering saved state on fresh start
+    if (!data?.resumeGame) {
+      this.savedGameState = undefined;
+      this.slidingHelpShown = false;
+      this.miniGameUsed = false;
+      this.gamePaused = false;
+      
+      // Destroy any existing sliding help button
+      if (this.slidingHelpButton) {
+        this.slidingHelpButton.destroy();
+        this.slidingHelpButton = undefined;
+      }
+      
+      // Clear any existing tweens
+      this.tweens.killAll();
+      
+      // Clear any existing timers
+      if (this.timerEvent) {
+        this.timerEvent.destroy();
+        this.timerEvent = undefined;
+      }
+    }
+    
     if (data?.resumeGame && this.savedGameState) {
       this.restoreGameState(data.miniGameResult || false);
       return;
@@ -652,16 +717,32 @@ export default class AirHockey extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
     this.physics.world.setBoundsCollision(true, true, true, true);
 
-    // Load selected character first before creating backgrounds
-    this.getSelectedCharacter();
-
     this.playingAreaBackground = this.add.image(UI_CONFIG.CENTER_X, this.playAreaCenter, 'airhockey-background')
       .setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
     const modalBossKey = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
-    this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, modalBossKey);
-    this.statsBackground.setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT);
-    this.statsBackground.setOrigin(0.5, 0.5);
-    this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
+    
+    // Check if texture exists before creating image
+    if (this.textures && this.textures.exists(modalBossKey)) {
+      this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, modalBossKey);
+      this.statsBackground.setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT);
+      this.statsBackground.setOrigin(0.5, 0.5);
+      this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
+    } else {
+      // Create a placeholder rectangle if texture isn't ready
+      this.statsBackground = this.add.rectangle(UI_CONFIG.CENTER_X, this.statsAreaCenter, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT, 0x222222);
+      this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
+      
+      // Try to load the texture after a delay
+      this.time.delayedCall(100, () => {
+        if (this.textures && this.textures.exists(modalBossKey)) {
+          this.statsBackground.destroy();
+          this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, modalBossKey);
+          this.statsBackground.setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT);
+          this.statsBackground.setOrigin(0.5, 0.5);
+          this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
+        }
+      });
+    }
 
     this.blueStatsBackground = this.add.rectangle(UI_CONFIG.BLUE_STATS_X, this.statsAreaCenter, UI_CONFIG.STATS_BG_WIDTH, UI_CONFIG.STATS_BG_HEIGHT, COLORS.DARK_BG, 0.8);
     this.blueStatsBackground.depth = DEPTHS.STATS_BG;
@@ -779,7 +860,10 @@ export default class AirHockey extends Phaser.Scene {
 
     this.paddleLeft = this.createPaddle(RINK.centerX, RINK.playerMinY + 100, 'blue-paddle');
     this.paddleRight = this.createPaddle(RINK.centerX, RINK.botMaxY - 100, 'red-paddle');
+    
+    // Load selected character after paddles are created
     this.getSelectedCharacter();
+    
     this.physics.add.collider(this.ball, this.paddleLeft, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
     this.physics.add.collider(this.ball, this.paddleRight, (ball, paddle) => this.onPaddleHit(ball as Phaser.Physics.Arcade.Sprite, paddle as Phaser.Physics.Arcade.Sprite), undefined, this);
 
@@ -3184,10 +3268,29 @@ export default class AirHockey extends Phaser.Scene {
     }
     
     const modalBossKey = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
-    this.statsBackground = this.add.image(540, this.statsAreaCenter, modalBossKey)
-      .setDisplaySize(1080, 640)
-      .setOrigin(0.5, 0.5)
-      .setDepth(1);
+    
+    // Check if texture exists before creating image
+    if (this.textures && this.textures.exists(modalBossKey)) {
+      this.statsBackground = this.add.image(540, this.statsAreaCenter, modalBossKey)
+        .setDisplaySize(1080, 640)
+        .setOrigin(0.5, 0.5)
+        .setDepth(1);
+    } else {
+      // Create a placeholder rectangle if texture isn't ready
+      this.statsBackground = this.add.rectangle(540, this.statsAreaCenter, 1080, 640, 0x222222)
+        .setDepth(1);
+      
+      // Try to load the texture after a delay
+      this.time.delayedCall(100, () => {
+        if (this.textures && this.textures.exists(modalBossKey)) {
+          this.statsBackground.destroy();
+          this.statsBackground = this.add.image(540, this.statsAreaCenter, modalBossKey)
+            .setDisplaySize(1080, 640)
+            .setOrigin(0.5, 0.5)
+            .setDepth(1);
+        }
+      });
+    }
 
     this.blueStatsBackground = this.add.rectangle(270, this.statsAreaCenter, 540, 640, 0x1a1a1a, 0.8);
     this.blueStatsBackground.depth = 2;
@@ -3891,20 +3994,42 @@ export default class AirHockey extends Phaser.Scene {
     
     if (savedCharacter) {
       this.selectedCharacter = savedCharacter;
+    } else {
+      // Set default character if none is saved
+      this.selectedCharacter = 'boss1';
+    }
       
-      const characterNames = ['Lady Delayna', 'Phantom Tax'];
-      const characterFrames = ['boss1', 'boss2'];
-      const characterTextures = ['boss-field1', 'boss-field2'];
-      const characterBackgrounds = ['boss-bg1', 'boss-bg2'];
-      const characterIndex = characterFrames.indexOf(savedCharacter);
+    const characterNames = ['Lady Delayna', 'Phantom Tax'];
+    const characterFrames = ['boss1', 'boss2'];
+    const characterTextures = ['boss-field1', 'boss-field2'];
+    const characterBackgrounds = ['boss-bg1', 'boss-bg2'];
+    const characterIndex = characterFrames.indexOf(this.selectedCharacter);
       
       if (characterIndex !== -1) {
         this.characterName = characterNames[characterIndex];
         this.characterBackground = characterBackgrounds[characterIndex];
         
-        if(this.paddleRight) {
+        if(this.paddleRight && this.paddleRight.scene) {
           const paddleTexture = characterTextures[characterIndex];
-          this.paddleRight.setTexture(paddleTexture);
+          // Defer texture setting if textures aren't ready yet
+          if(this.textures && this.textures.exists(paddleTexture)) {
+            try {
+              this.paddleRight.setTexture(paddleTexture);
+            } catch (error) {
+              console.warn('Failed to set paddle texture:', error);
+            }
+          } else {
+            // Try again after a short delay
+            this.time.delayedCall(100, () => {
+              if(this.paddleRight && this.paddleRight.scene && this.textures && this.textures.exists(paddleTexture)) {
+                try {
+                  this.paddleRight.setTexture(paddleTexture);
+                } catch (error) {
+                  console.warn('Failed to set paddle texture (delayed):', error);
+                }
+              }
+            });
+          }
         }
         
         if(this.playingAreaBackground) {
@@ -3918,17 +4043,14 @@ export default class AirHockey extends Phaser.Scene {
           this.playingAreaBackground = bgImage;
           
         }
-      } else {
       }
-    } else {
-    }
     
     if (this.redHealthLabel) {
       this.redHealthLabel.setText(this.characterName);
     }
   }
 
-  private showEndGameModal(isRedWinner: boolean, winnerText: string) {
+  private showEndGameModal(isRedWinner: boolean, winnerText: string): void {
     
     const overlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 0.8);
     overlay.setDepth(100);
@@ -4043,15 +4165,10 @@ export default class AirHockey extends Phaser.Scene {
     this.gameRestart.once('pointerdown', () => {
       if (this.cheer && this.cheer.isPlaying) this.cheer.stop();
       
-      if (this.timerEvent) {
-        this.timerEvent.destroy();
-        this.timerEvent = undefined;
-      }
+      // Use centralized cleanup
+      this.cleanupForRestart();
       
-      this.input.removeAllListeners();
-      
-      this.touchControlsSetup = false;
-      
+      // Restart the scene
       this.scene.restart();
     });
   }
