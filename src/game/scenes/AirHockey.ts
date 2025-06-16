@@ -4250,7 +4250,31 @@ export default class AirHockey extends Phaser.Scene {
     const nextModal = this.selectedCharacter === 'boss1' ? 'next-modal-boss1' : 'next-modal-boss2';
     const nextModalImage = this.add.image(0, -200, nextModal);
     nextModalImage.setScale(0.5);
-    nextModalContainer.add([nextModalImage]);
+    
+    // Calculate scores
+    const playerScore = Math.floor((100 - this.rightHealth) / 10);
+    const bossScore = Math.floor((100 - this.leftHealth) / 10);
+    
+    // Generate QR code URL
+    // const baseURL = 'https://yourgame.com/results';
+    // const bossName = encodeURIComponent(this.characterName);
+    // const qrURL = `${baseURL}?bossname=${bossName}&scoreplayer=${playerScore}&scoreboss=${bossScore}`;
+
+    const baseURL = 'https://yourgame.com/results';
+
+    const queryParams = new URLSearchParams({
+      bossname: this.characterName,
+      scoreplayer: String(playerScore),
+      scoreboss: String(bossScore)
+    });
+    
+    const qrURL = `${baseURL}?${queryParams.toString()}`;
+    
+    // Create QR code elements
+    const qrElements = this.generateQRCode(qrURL);
+    
+    // Add all elements to container
+    nextModalContainer.add([nextModalImage, ...qrElements]);
     
     // Add click handler to overlay to go to main menu
     nextOverlay.on('pointerdown', () => {
@@ -4265,5 +4289,144 @@ export default class AirHockey extends Phaser.Scene {
       duration: 500,
       ease: 'Back.easeOut'
     });
+  }
+
+  // private generateQRCode(url: string): Phaser.GameObjects.GameObject[] {
+  //   // Create a larger, more scannable QR code
+  //   const qrSize = 250;
+  //   const padding = 30;
+    
+  //   // Create QR code background with better contrast
+  //   const qrBackground = this.add.rectangle(0, 120, qrSize + padding, qrSize + padding, 0xffffff);
+  //   qrBackground.setStrokeStyle(6, 0x000000);
+    
+  //   // For now, create a simple text-based approach that's more reliable
+  //   // In production, you'd use a proper QR code library like qrcode.js
+    
+  //   // Create a placeholder that shows the URL clearly
+  //   const qrPlaceholder = this.add.rectangle(0, 120, qrSize, qrSize, 0x000000);
+    
+  //   // Add QR-like corner markers for visual appeal
+  //   const cornerSize = 40;
+  //   const corners = [
+  //     {x: -qrSize/2 + cornerSize/2, y: -qrSize/2 + cornerSize/2},
+  //     {x: qrSize/2 - cornerSize/2, y: -qrSize/2 + cornerSize/2},
+  //     {x: -qrSize/2 + cornerSize/2, y: qrSize/2 - cornerSize/2}
+  //   ];
+    
+  //   corners.forEach(corner => {
+  //     const outerCorner = this.add.rectangle(corner.x, corner.y + 120, cornerSize, cornerSize, 0xffffff);
+  //     const innerCorner = this.add.rectangle(corner.x, corner.y + 120, cornerSize - 12, cornerSize - 12, 0x000000);
+  //     const centerDot = this.add.rectangle(corner.x, corner.y + 120, 12, 12, 0xffffff);
+  //     qrPlaceholder.parentContainer?.add([outerCorner, innerCorner, centerDot]);
+  //   });
+    
+  //   // Add instruction text
+  //   const instructionText = this.add.text(0, 30, 'SCAN QR CODE', {
+  //     fontFamily: 'Commando',
+  //     fontSize: '20px',
+  //     color: '#FFD700',
+  //     stroke: '#000000',
+  //     strokeThickness: 3
+  //   });
+  //   instructionText.setOrigin(0.5, 0.5);
+    
+  //   // Create a clickable URL text that's more prominent
+  //   const urlText = this.add.text(0, 290, 'Tap to copy link:\n' + url, {
+  //     fontFamily: 'Arial',
+  //     fontSize: '14px',
+  //     color: '#00ff00',
+  //     backgroundColor: 'rgba(0,0,0,0.8)',
+  //     padding: { x: 10, y: 8 },
+  //     wordWrap: { width: 450 },
+  //     align: 'center'
+  //   });
+  //   urlText.setOrigin(0.5, 0.5);
+  //   urlText.setInteractive({ useHandCursor: true });
+    
+  //   // Add click handler to copy URL (if navigator.clipboard is available)
+  //   urlText.on('pointerdown', () => {
+  //     if (navigator.clipboard) {
+  //       navigator.clipboard.writeText(url).then(() => {
+  //                  // Show confirmation
+  //        const copyConfirm = this.add.text(0, 340, 'Link copied!', {
+  //           fontFamily: 'Arial',
+  //           fontSize: '16px',
+  //           color: '#00ff00'
+  //         });
+  //         copyConfirm.setOrigin(0.5, 0.5);
+          
+  //         this.tweens.add({
+  //           targets: copyConfirm,
+  //           alpha: 0,
+  //           duration: 2000,
+  //           onComplete: () => copyConfirm.destroy()
+  //         });
+  //       });
+  //     }
+  //   });
+    
+  //   // Generate actual QR code using an external service (more reliable for scanning)
+  //   const qrCodeAPIUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+    
+  //   // Try to load QR code from API
+  //   this.load.image('generated-qr', qrCodeAPIUrl);
+  //        this.load.once('filecomplete-image-generated-qr', () => {
+  //      // Replace placeholder with actual QR code
+  //      qrPlaceholder.setVisible(false);
+  //      const actualQR = this.add.image(0, 120, 'generated-qr');
+  //      actualQR.setDisplaySize(qrSize, qrSize);
+  //      qrBackground.parentContainer?.add(actualQR);
+  //    });
+  //   this.load.start();
+    
+  //   // Return all QR code elements
+  //   return [qrBackground, qrPlaceholder, instructionText, urlText];
+  // }
+
+  private generateQRCode(url: string): Phaser.GameObjects.GameObject[] {
+    const qrSize = 200;
+    const padding = 30;
+  
+    // Move everything ~30px upward from previous baseline
+    const qrY = 170;
+    const labelY = 80;
+  
+    // Background rectangle
+    const qrBackground = this.add.rectangle(0, qrY, qrSize + padding, qrSize + padding, 0xffffff);
+    qrBackground.setStrokeStyle(6, 0x000000);
+    qrBackground.setOrigin(0.5, 0.5);
+  
+    // Placeholder QR block
+    const qrPlaceholder = this.add.rectangle(0, qrY, qrSize, qrSize, 0x000000);
+    qrPlaceholder.setOrigin(0.5, 0.5);
+  
+    // Instructional text
+    const instructionText = this.add.text(0, labelY, 'SCAN QR CODE', {
+      fontFamily: 'Commando',
+      fontSize: '20px',
+      color: '#FFD700',
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    instructionText.setOrigin(0.5, 0.5);
+  
+    // QR code image from external source
+    const qrCodeAPIUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
+    this.load.image('generated-qr', qrCodeAPIUrl);
+  
+    this.load.once('filecomplete-image-generated-qr', () => {
+      qrPlaceholder.setVisible(false);
+  
+      const actualQR = this.add.image(qrPlaceholder.x, qrPlaceholder.y, 'generated-qr');
+      actualQR.setDisplaySize(qrSize, qrSize);
+      actualQR.setOrigin(0.5, 0.5);
+  
+      qrBackground.parentContainer?.add(actualQR);
+    });
+  
+    this.load.start();
+  
+    return [qrBackground, qrPlaceholder, instructionText];
   }
 }
