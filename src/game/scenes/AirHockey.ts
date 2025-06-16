@@ -719,11 +719,11 @@ export default class AirHockey extends Phaser.Scene {
 
     this.playingAreaBackground = this.add.image(UI_CONFIG.CENTER_X, this.playAreaCenter, 'airhockey-background')
       .setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.PLAY_AREA_HEIGHT);
-    const modalBossKey = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
+    const statsBoss = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
     
     // Check if texture exists before creating image
-    if (this.textures && this.textures.exists(modalBossKey)) {
-      this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, modalBossKey);
+    if (this.textures && this.textures.exists(statsBoss)) {
+      this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, statsBoss);
       this.statsBackground.setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT);
       this.statsBackground.setOrigin(0.5, 0.5);
       this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
@@ -734,9 +734,9 @@ export default class AirHockey extends Phaser.Scene {
       
       // Try to load the texture after a delay
       this.time.delayedCall(100, () => {
-        if (this.textures && this.textures.exists(modalBossKey)) {
+        if (this.textures && this.textures.exists(statsBoss)) {
           this.statsBackground.destroy();
-          this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, modalBossKey);
+          this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, statsBoss);
           this.statsBackground.setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT);
           this.statsBackground.setOrigin(0.5, 0.5);
           this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
@@ -3267,27 +3267,52 @@ export default class AirHockey extends Phaser.Scene {
       this.playingAreaBackground = this.add.rectangle(540, this.playAreaCenter, 1080, 1280,  0xffffff, 0);
     }
     
-    const modalBossKey = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
+    // const modalBossKey = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
+    
+    // // Check if texture exists before creating image
+    // if (this.textures && this.textures.exists(modalBossKey)) {
+    //   this.statsBackground = this.add.image(540, this.statsAreaCenter, modalBossKey)
+    //     .setDisplaySize(1080, 640)
+    //     .setOrigin(0.5, 0.5)
+    //     .setDepth(1);
+    // } else {
+    //   // Create a placeholder rectangle if texture isn't ready
+    //   this.statsBackground = this.add.rectangle(540, this.statsAreaCenter, 1080, 640, 0x222222)
+    //     .setDepth(1);
+      
+    //   // Try to load the texture after a delay
+    //   this.time.delayedCall(100, () => {
+    //     if (this.textures && this.textures.exists(modalBossKey)) {
+    //       this.statsBackground.destroy();
+    //       this.statsBackground = this.add.image(540, this.statsAreaCenter, modalBossKey)
+    //         .setDisplaySize(1080, 640)
+    //         .setOrigin(0.5, 0.5)
+    //         .setDepth(1);
+    //     }
+    //   });
+    // }
+
+    const statsBoss = this.selectedCharacter === 'boss1' ? 'stats-boss1' : 'stats-boss2';
     
     // Check if texture exists before creating image
-    if (this.textures && this.textures.exists(modalBossKey)) {
-      this.statsBackground = this.add.image(540, this.statsAreaCenter, modalBossKey)
-        .setDisplaySize(1080, 640)
-        .setOrigin(0.5, 0.5)
-        .setDepth(1);
+    if (this.textures && this.textures.exists(statsBoss)) {
+      this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, statsBoss);
+      this.statsBackground.setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT);
+      this.statsBackground.setOrigin(0.5, 0.5);
+      this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
     } else {
       // Create a placeholder rectangle if texture isn't ready
-      this.statsBackground = this.add.rectangle(540, this.statsAreaCenter, 1080, 640, 0x222222)
-        .setDepth(1);
+      this.statsBackground = this.add.rectangle(UI_CONFIG.CENTER_X, this.statsAreaCenter, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT, 0x222222);
+      this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
       
       // Try to load the texture after a delay
       this.time.delayedCall(100, () => {
-        if (this.textures && this.textures.exists(modalBossKey)) {
+        if (this.textures && this.textures.exists(statsBoss)) {
           this.statsBackground.destroy();
-          this.statsBackground = this.add.image(540, this.statsAreaCenter, modalBossKey)
-            .setDisplaySize(1080, 640)
-            .setOrigin(0.5, 0.5)
-            .setDepth(1);
+          this.statsBackground = this.add.image(UI_CONFIG.CENTER_X, this.statsAreaCenter, statsBoss);
+          this.statsBackground.setDisplaySize(UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.STATS_BG_HEIGHT);
+          this.statsBackground.setOrigin(0.5, 0.5);
+          this.statsBackground.setDepth(DEPTHS.UI_ELEMENTS);
         }
       });
     }
