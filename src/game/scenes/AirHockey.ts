@@ -621,6 +621,8 @@ export default class AirHockey extends Phaser.Scene {
     this.load.image("boss-bg2", "assets/background/boss2.png");
     this.load.image("stats-boss1", "assets/characters/boss-btm-1.png");
     this.load.image("stats-boss2", "assets/characters/boss-btm-2.png");
+    this.load.image("next-modal-boss1", "assets/modals/next-modal-boss1.png");
+    this.load.image("next-modal-boss2", "assets/modals/next-modal-boss2.png");
     
     this.load.image("help-icon", "assets/airhockey/help.svg");
     this.load.image("net", "assets/airhockey/net.svg");
@@ -4238,24 +4240,17 @@ export default class AirHockey extends Phaser.Scene {
 
   private showNextModal(): void {
     // Create a new modal overlay
-    const nextOverlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 0.9);
+    const nextOverlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 1);
     nextOverlay.setDepth(110);
     nextOverlay.setInteractive();
     
     const nextModalContainer = this.add.container(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2);
     nextModalContainer.setDepth(111);
-    
-    // Add modal content here
-    const modalTitle = this.add.text(0, -200, 'NEXT LEVEL', {
-      fontFamily: 'Commando',
-      fontSize: '64px',
-      color: '#FFD700',
-      stroke: '#000000',
-      strokeThickness: 6
-    });
-    modalTitle.setOrigin(0.5, 0.5);
-    
-    nextModalContainer.add([modalTitle]);
+
+    const nextModal = this.selectedCharacter === 'boss1' ? 'next-modal-boss1' : 'next-modal-boss2';
+    const nextModalImage = this.add.image(0, -200, nextModal);
+    nextModalImage.setScale(0.5);
+    nextModalContainer.add([nextModalImage]);
     
     // Add click handler to overlay to go to main menu
     nextOverlay.on('pointerdown', () => {
