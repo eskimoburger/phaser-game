@@ -21,6 +21,10 @@ export class MainMenu extends Scene {
   }
 
   create() {
+    // Reset all loading states when scene is created
+    this.isLoading = false;
+    this.loadingProgress = 0;
+
     // Add the background image
     this.background = this.add.image(0, 0, "background").setOrigin(0, 0);
 
@@ -92,7 +96,9 @@ export class MainMenu extends Scene {
     this.playButton = this.add
       .image(540, 1790, "start-button")
       .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
+      .setInteractive({ useHandCursor: true })
+      .setAlpha(1)
+      .setVisible(true);
 
     // Create loading text (hidden initially)
     this.loadingText = this.add
