@@ -77,10 +77,10 @@ const UI_CONFIG = {
   
   // Y positions
   TITLE_Y: 1320,
-  HEALTH_LABEL_Y: 1420,
-  HEALTH_BAR_Y: 1460,
-  TIME_LABEL_Y: 1480,
-  TIMER_Y: 1520,
+  HEALTH_LABEL_Y: 1350,
+  HEALTH_BAR_Y: 1350,
+  TIME_LABEL_Y: 1380,
+  TIMER_Y: 1380,
   GAME_INFO_Y: 1580,
   STATS_CENTER_Y: 1600,
   INDICATORS_Y: 1680,
@@ -801,6 +801,7 @@ export default class AirHockey extends Phaser.Scene {
       stroke: COLORS.BLACK,
       strokeThickness: 4
     });
+    this.timerText.setDepth(DEPTHS.UI_ELEMENTS);
 
     this.createStatsText(UI_CONFIG.CENTER_X, UI_CONFIG.TIME_LABEL_Y, 'TIME REMAINING', {
       color: COLORS.GRAY
