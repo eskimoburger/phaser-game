@@ -435,6 +435,33 @@ export default class AirHockey extends Phaser.Scene {
     this.miniGameUsed = false;
     this.gameStarted = false;
     this.countdownActive = false;
+    
+    // Reset modal flags
+    this.endGameModalShown = false;
+    this.nextModalShown = false;
+  }
+
+  private cleanupExistingModals() {
+    // Clean up any existing modal elements
+    const existingOverlay = this.children.getByName('endGameOverlay');
+    if (existingOverlay) {
+      existingOverlay.destroy();
+    }
+    
+    const existingContainer = this.children.getByName('endGameModalContainer');
+    if (existingContainer) {
+      existingContainer.destroy();
+    }
+    
+    const existingNextOverlay = this.children.getByName('nextModalOverlay');
+    if (existingNextOverlay) {
+      existingNextOverlay.destroy();
+    }
+    
+    const existingNextContainer = this.children.getByName('nextModalContainer');
+    if (existingNextContainer) {
+      existingNextContainer.destroy();
+    }
   }
 
   private rightHealth = GAME_CONFIG.INITIAL_HEALTH;
@@ -589,6 +616,10 @@ export default class AirHockey extends Phaser.Scene {
   private selectedCharacter: string = 'boss1';
   private characterName: string = 'Lady Delayna';
   private characterBackground: string = 'boss-bg1';
+  
+  // Modal control flags
+  private endGameModalShown = false;
+  private nextModalShown = false;
 
   constructor() {
     super({ 
@@ -4099,17 +4130,31 @@ export default class AirHockey extends Phaser.Scene {
   // Remove this method as it's redundant - consolidating into loadSelectedCharacterData
 
   private showEndGameModal(isRedWinner: boolean, winnerText: string): void {
+    // Prevent multiple calls
+    if (this.endGameModalShown) {
+      return;
+    }
+    this.endGameModalShown = true;
+    
+    // Pause the game when modal opens
+    this.pauseGame();
+    
+    // Clean up any existing modals first
+    this.cleanupExistingModals();
     
     const overlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 0.8);
     overlay.setDepth(100);
+    overlay.setName('endGameOverlay'); // Add name for cleanup
     
     const modalContainer = this.add.container(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2);
     modalContainer.setDepth(101);
+    modalContainer.setName('endGameModalContainer'); // Add name for cleanup
     
     const modalBossKey = this.selectedCharacter === 'boss1' ? 'modal-boss1' : 'modal-boss2';
     const bossImage = this.add.image(0, -200, modalBossKey);
     bossImage.setScale(0.5);
     
+    // Calculate scores immediately when modal is created to prevent stale state
     const blueGoals = Math.floor((100 - this.rightHealth) / 10);
     const redGoals = Math.floor((100 - this.leftHealth) / 10);
     
@@ -4148,19 +4193,49 @@ export default class AirHockey extends Phaser.Scene {
     nextButton.setDisplaySize(900, 136);
     nextButton.setOrigin(0.5, 0.5);
     nextButton.setInteractive();
+    nextButton.setName('nextButton'); // Add name for cleanup
+    
+    // Store initial scale to prevent weird scaling issues
+    const initialScale = 0.5;
+    nextButton.setScale(initialScale);
+    
+    // Remove all previous listeners to prevent accumulation
+    nextButton.removeAllListeners();
     
     nextButton.on('pointerover', () => {
-      nextButton.setScale(1.05);
-      nextButton.setTint(0xFFFFAA);
+      if (nextButton.active) {
+        this.tweens.killTweensOf(nextButton);
+        this.tweens.add({
+          targets: nextButton,
+          scaleX: 1.05,
+          scaleY: 1.05,
+          duration: 100,
+          ease: 'Power2'
+        });
+        nextButton.setTint(0xFFFFAA);
+      }
     });
     
     nextButton.on('pointerout', () => {
-      nextButton.setScale(1);
-      nextButton.clearTint();
+      if (nextButton.active) {
+        this.tweens.killTweensOf(nextButton);
+        this.tweens.add({
+          targets: nextButton,
+          scaleX: initialScale,
+          scaleY: initialScale,
+          duration: 100,
+          ease: 'Power2'
+        });
+        nextButton.clearTint();
+      }
     });
     
     nextButton.on('pointerdown', () => {
-      this.showNextModal();
+      if (nextButton.active) {
+        // Prevent multiple clicks
+        nextButton.setInteractive(false);
+        this.showNextModal();
+      }
     });
     
     modalContainer.add([bossImage, scoreContainer, nextButton]);
@@ -4187,19 +4262,30 @@ export default class AirHockey extends Phaser.Scene {
   }
 
   private showNextModal(): void {
+    // Prevent multiple calls
+    if (this.nextModalShown) {
+      return;
+    }
+    this.nextModalShown = true;
+    
+    // Ensure game is paused when next modal opens
+    this.pauseGame();
+    
     // Create a new modal overlay
     const nextOverlay = this.add.rectangle(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2, UI_CONFIG.SCREEN_WIDTH, UI_CONFIG.SCREEN_HEIGHT, 0x000000, 1);
     nextOverlay.setDepth(110);
     nextOverlay.setInteractive();
+    nextOverlay.setName('nextModalOverlay'); // Add name for cleanup
     
     const nextModalContainer = this.add.container(UI_CONFIG.CENTER_X, UI_CONFIG.SCREEN_HEIGHT / 2);
     nextModalContainer.setDepth(111);
+    nextModalContainer.setName('nextModalContainer'); // Add name for cleanup
 
     const nextModal = this.selectedCharacter === 'boss1' ? 'next-modal-boss1' : 'next-modal-boss2';
     const nextModalImage = this.add.image(0, 0, nextModal);
     nextModalImage.setScale(0.5);
     
-    // Calculate scores
+    // Calculate scores at the time of showing this modal (not when the game ended)
     const playerScore = Math.floor((100 - this.rightHealth) / 10);
     const bossScore = Math.floor((100 - this.leftHealth) / 10);
     
@@ -4213,9 +4299,11 @@ export default class AirHockey extends Phaser.Scene {
     // Add all elements to container
     nextModalContainer.add([nextModalImage, ...qrElements]);
     
-    // Add click handler to overlay to go to main menu
-    nextOverlay.on('pointerdown', () => {
-      this.scene.start('MainMenu');
+    // Add click handler to overlay to go to main menu (prevent multiple clicks)
+    nextOverlay.once('pointerdown', () => {
+      if (nextOverlay.active) {
+        this.scene.start('MainMenu');
+      }
     });
     
     // Animate modal entrance
