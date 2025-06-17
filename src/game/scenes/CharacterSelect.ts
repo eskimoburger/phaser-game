@@ -143,6 +143,9 @@ export class CharacterSelect extends Scene {
   }
 
   create() {
+    // Always reset to first character (Lady Delayna) when entering character select
+    this.currentIndex = 0;
+    
     // Apply mobile optimizations if needed
     if (this.IS_TOUCH_DEVICE) {
       this.optimizeForMobile();

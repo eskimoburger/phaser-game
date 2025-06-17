@@ -638,6 +638,9 @@ export default class AirHockey extends Phaser.Scene {
       this.miniGameUsed = false;
       this.gamePaused = false;
       
+      // Reset bot difficulty to default for fresh games
+      this.botDifficulty = 'extreme';
+      
       // Destroy any existing sliding help button
       if (this.slidingHelpButton) {
         this.slidingHelpButton.destroy();
