@@ -1,4 +1,4 @@
-import { Game } from 'phaser';
+import Phaser from 'phaser';
 import { gameConfig } from './config/gameConfig';
 import { Boot } from '../game/scenes/Boot';
 import { GameOver } from '../game/scenes/GameOver';
@@ -25,8 +25,8 @@ const scenes = [
 ];
 
 const StartGame = (parent: string) => {
-    return new Game({ 
-        ...gameConfig, 
+    return new Phaser.Game({
+        ...gameConfig,
         parent,
         scene: scenes
     });
