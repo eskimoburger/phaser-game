@@ -4205,11 +4205,10 @@ export default class AirHockey extends Phaser.Scene {
     
     // Generate QR code URL for Facebook sharing
     const bossName = this.characterName;
-    const sharedURL = `https://result-phaser-game.vercel.app/result?bossname=${encodeURIComponent(bossName)}&scoreplayer=${playerScore}&scoreboss=${bossScore}`;
-    const qrURL = `https://www.facebook.com/sharer.php?u=${encodeURIComponent(sharedURL)}`;
+    const sharedURL = `https://result-phaser-game.vercel.app/result?bossname=${encodeURIComponent(bossName)}&scoreplayer=${playerScore}&scoreboss=${bossScore}&share=true`;
     
     // Create QR code elements
-    const qrElements = this.generateQRCode(qrURL);
+    const qrElements = this.generateQRCode(sharedURL);
     
     // Add all elements to container
     nextModalContainer.add([nextModalImage, ...qrElements]);
