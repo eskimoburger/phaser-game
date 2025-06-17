@@ -35,6 +35,10 @@ interface GameState {
   selectedCharacter: string;
   characterName: string;
   characterBackground: string;
+  
+  // Goal celebration state
+  goalCelebrationActive: boolean;
+  goalCelebrationValue: number;
 }
 
 const RINK = {
@@ -439,6 +443,14 @@ export default class AirHockey extends Phaser.Scene {
     // Reset modal flags
     this.endGameModalShown = false;
     this.nextModalShown = false;
+    
+    // Reset goal celebration state
+    this.goalCelebrationActive = false;
+    this.goalCelebrationValue = 0;
+    if (this.goalCelebrationText) {
+      this.goalCelebrationText.destroy();
+      this.goalCelebrationText = undefined;
+    }
   }
 
   private cleanupExistingModals() {
@@ -620,6 +632,11 @@ export default class AirHockey extends Phaser.Scene {
   // Modal control flags
   private endGameModalShown = false;
   private nextModalShown = false;
+  
+  // Goal celebration properties
+  private goalCelebrationActive = false;
+  private goalCelebrationText?: Phaser.GameObjects.Text;
+  private goalCelebrationValue = 0;
 
   constructor() {
     super({ 
@@ -668,6 +685,18 @@ export default class AirHockey extends Phaser.Scene {
       this.slidingHelpShown = false;
       this.miniGameUsed = false;
       this.gamePaused = false;
+      
+      // Reset modal flags for new rounds
+      this.endGameModalShown = false;
+      this.nextModalShown = false;
+      
+      // Reset goal celebration state
+      this.goalCelebrationActive = false;
+      this.goalCelebrationValue = 0;
+      if (this.goalCelebrationText) {
+        this.goalCelebrationText.destroy();
+        this.goalCelebrationText = undefined;
+      }
       
       // Reset bot difficulty to default for fresh games
       this.botDifficulty = 'extreme';
@@ -1024,7 +1053,7 @@ export default class AirHockey extends Phaser.Scene {
 
     this.storePreviousPositions();
 
-    if (this.gameStarted && !this.countdownActive && !this.gamePaused) {
+    if (this.gameStarted && !this.countdownActive && !this.gamePaused && !this.goalCelebrationActive) {
       if (!this.isRedDragging && (!this.win && !this.gameRestart)) {
         this.updateBotAI();
       }
@@ -1045,7 +1074,7 @@ export default class AirHockey extends Phaser.Scene {
       }
     }
     
-    if (!this.win && !this.gameRestart && !this.gamePaused) {
+    if (!this.win && !this.gameRestart && !this.gamePaused && !this.goalCelebrationActive) {
         this.updateInputState();
         this.applyPaddleMovement(lbody);
     }
@@ -1107,10 +1136,10 @@ export default class AirHockey extends Phaser.Scene {
     
     this.updateHealthBars();
 
+    // Reset ball position and clear trace
     this.ball.body!.stop();
     this.ball.setPosition(RINK.centerX, RINK.centerY);
-    this.ball.setVelocity(0, playerScored ? 350 : -350);
-
+    
     this.ballTracePoints = [];
     if (this.traceGraphics) {
       this.traceGraphics.clear();
@@ -1149,7 +1178,25 @@ export default class AirHockey extends Phaser.Scene {
     this.createPaddleResetEffect(this.paddleLeft);
     this.createPaddleResetEffect(this.paddleRight);
 
+    // Check if game is over before starting celebration
     if (this.rightHealth <= 0 || this.leftHealth <= 0) {
+      
+      // Clean up any active goal celebration before showing end game modal
+      if (this.goalCelebrationActive) {
+        this.goalCelebrationActive = false;
+        this.gamePaused = false;
+        this.goalCelebrationValue = 0;
+        
+        // Clean up goal celebration text
+        if (this.goalCelebrationText) {
+          this.tweens.killTweensOf(this.goalCelebrationText);
+          this.goalCelebrationText.destroy();
+          this.goalCelebrationText = undefined;
+        }
+        
+        // Clean up any goal celebration timer events
+        // Note: We don't remove all events to avoid affecting other important timers
+      }
       
       if (this.timerEvent) {
         this.timerEvent.destroy();
@@ -1165,13 +1212,24 @@ export default class AirHockey extends Phaser.Scene {
       const winnerText = this.leftHealth <=0 ? 'RED WINS!!!!!' : 'BLUE WINS!!!!';
       const isRedWinner = this.leftHealth <= 0;
 
-      this.showEndGameModal(isRedWinner, winnerText);
+      // For fire ball wins, show modal immediately to avoid conflicts with fire effects
+      if (hadFireEffect) {
+        this.showEndGameModal(isRedWinner, winnerText);
+      } else {
+        // Add a small delay to ensure all cleanup is complete before showing modal
+        this.time.delayedCall(100, () => {
+          this.showEndGameModal(isRedWinner, winnerText);
+        });
+      }
 
       this.ball.body!.stop();
       const leftBody = this.paddleLeft.body as Phaser.Physics.Arcade.Body;
       const rightBody = this.paddleRight.body as Phaser.Physics.Arcade.Body;
       leftBody.setVelocity(0, 0);
       rightBody.setVelocity(0, 0);
+    } else {
+      // Start goal celebration sequence if game is not over
+      this.startGoalCelebration(playerScored);
     }
   }
 
@@ -1180,7 +1238,7 @@ export default class AirHockey extends Phaser.Scene {
     this.touchControlsSetup = true;
 
     this.input.on('dragstart', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
-      if (this.win || this.gameRestart) return;
+      if (this.win || this.gameRestart || this.gamePaused || this.goalCelebrationActive) return;
       
       const currentTime = this.time.now;
       
@@ -1212,7 +1270,7 @@ export default class AirHockey extends Phaser.Scene {
     });
 
     this.input.on('drag', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.GameObject) => {
-      if (this.win || this.gameRestart) return;
+      if (this.win || this.gameRestart || this.gamePaused || this.goalCelebrationActive) return;
       
       if (gameObject === this.paddleLeft && this.isDragging) {
         const deltaX = pointer.x - this.dragStartX;
@@ -1254,18 +1312,37 @@ export default class AirHockey extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (this.win || this.gameRestart) return;
+      if (this.win || this.gameRestart || this.gamePaused || this.goalCelebrationActive) return;
+      
+      // Debug logging
+      console.log('Touch detected:', {
+        x: pointer.x,
+        y: pointer.y,
+        gameStarted: this.gameStarted,
+        countdownActive: this.countdownActive,
+        isDragging: this.isDragging,
+        isTouchMoving: this.isTouchMoving,
+        lastInputType: this.lastInputType,
+        playAreaTest: pointer.y > RINK.playerMinY - 100
+      });
       
       const currentTime = this.time.now;
       const timeSinceLastInput = currentTime - this.lastInputTime;
       
-      if (pointer.y > RINK.centerY && !this.isDragging && !this.isTouchMoving && 
+      if (pointer.y > RINK.playerMinY - 100 && !this.isDragging && !this.isTouchMoving && 
           (this.lastInputType !== 'keyboard' || timeSinceLastInput > this.inputSwitchCooldown)) {
         
         const paddleDistance = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.paddleLeft.x, this.paddleLeft.y);
         const paddleRadius = (this.paddleLeft.body as Phaser.Physics.Arcade.Body).radius;
         
-        if (paddleDistance > paddleRadius + 30) {
+        if (paddleDistance > paddleRadius + 15) {
+          
+          console.log('Touch movement activated:', {
+            paddleDistance,
+            paddleRadius,
+            targetX: Math.max(RINK.minX, Math.min(RINK.maxX, pointer.x)),
+            targetY: Math.max(RINK.playerMinY, Math.min(RINK.playerMaxY, pointer.y))
+          });
           
           this.clearOtherInputStates('touch');
           
@@ -1281,14 +1358,16 @@ export default class AirHockey extends Phaser.Scene {
           this.lastInputTime = currentTime;
           this.lastInputType = 'touch';
           
+        } else {
+          console.log('Touch too close to paddle:', { paddleDistance, required: paddleRadius + 15 });
         }
       }
     });
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-      if (this.win || this.gameRestart) return;
+      if (this.win || this.gameRestart || this.gamePaused || this.goalCelebrationActive) return;
       
-      if (pointer.isDown && pointer.y > RINK.centerY && !this.isDragging && this.isTouchMoving) {
+      if (pointer.isDown && pointer.y > RINK.playerMinY - 100 && !this.isDragging && this.isTouchMoving) {
         let targetY = pointer.y;
         if (pointer.y > this.playAreaBottom) {
           targetY = RINK.playerMaxY - 50;
@@ -2522,6 +2601,172 @@ export default class AirHockey extends Phaser.Scene {
     }
   }
 
+  private startGoalCelebration(playerScored: boolean) {
+    // Pause the game
+    this.gamePaused = true;
+    this.goalCelebrationActive = true;
+    this.goalCelebrationValue = 0; // Start with "GOAL!"
+    
+    // Stop the ball
+    this.ball.body!.stop();
+    
+    // Screen shake effect
+    this.cameras.main.shake(300, 0.01);
+    
+    // Show "GOAL!" message with glow effect
+    this.goalCelebrationText = this.add.text(RINK.centerX, RINK.centerY - 100, 'GOAL!', {
+      fontFamily: 'Commando',
+      fontSize: '100px',
+      color: playerScored ? '#00ff00' : '#ff4444',
+      stroke: '#000000',
+      strokeThickness: 8
+    });
+    this.goalCelebrationText.setOrigin(0.5, 0.5);
+    this.goalCelebrationText.setDepth(20);
+
+    // Add glow effect
+    this.goalCelebrationText.setPostPipeline('glow');
+
+    // Add multiple celebration effects
+    this.tweens.add({
+      targets: this.goalCelebrationText,
+      scaleX: 1.5,
+      scaleY: 1.5,
+      duration: 200,
+      ease: 'Back.easeOut',
+      yoyo: true,
+      repeat: 1
+    });
+
+    // Pulsing glow effect
+    this.tweens.add({
+      targets: this.goalCelebrationText,
+      alpha: 0.7,
+      duration: 300,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1
+    });
+
+    // Color transition effect
+    this.tweens.add({
+      targets: this.goalCelebrationText,
+      duration: 400,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: 1,
+      onUpdate: (tween: Phaser.Tweens.Tween) => {
+        const colors = ['#ffff00', '#ff00ff', '#00ffff', playerScored ? '#00ff00' : '#ff4444'];
+        const colorIndex = Math.floor(tween.progress * colors.length);
+        if (colors[colorIndex] && this.goalCelebrationText) {
+          this.goalCelebrationText.setColor(colors[colorIndex]);
+        }
+      }
+    });
+
+    // Create particle explosion effect
+    this.createGoalParticleEffect(RINK.centerX, RINK.centerY - 100, playerScored);
+
+    // Start countdown sequence after showing GOAL
+    this.time.addEvent({
+      delay: 1200, // Show GOAL for 1.2 seconds
+              callback: () => {
+          // Stop the pulsing effect
+          if (this.goalCelebrationText) {
+            this.tweens.killTweensOf(this.goalCelebrationText);
+            this.goalCelebrationText.setAlpha(1);
+          }
+        
+        // Start the READY -> GO sequence with faster timing
+        this.time.addEvent({
+          delay: 700, // 0.7 seconds between READY and GO
+          callback: this.updateGoalCelebration,
+          callbackScope: this,
+          repeat: 2 // Ready, Go, then continue
+        });
+      },
+      callbackScope: this
+    });
+  }
+
+  private updateGoalCelebration() {
+    if (!this.goalCelebrationText) return;
+
+    this.goalCelebrationValue++;
+    
+    if (this.goalCelebrationValue === 1) {
+      // Show "READY"
+      this.goalCelebrationText.setText('READY');
+      this.goalCelebrationText.setColor('#ffffff');
+      this.goalCelebrationText.setScale(1);
+    } else if (this.goalCelebrationValue === 2) {
+      // Show "GO!"
+      this.goalCelebrationText.setText('GO!');
+      this.goalCelebrationText.setColor('#00ff00');
+    } else {
+      // Clean up and resume game
+      this.goalCelebrationText.destroy();
+      this.goalCelebrationText = undefined;
+      this.goalCelebrationActive = false;
+      this.gamePaused = false;
+      
+      // Resume ball movement
+      this.ball.setVelocity(0, this.ball.y > RINK.centerY ? 350 : -350);
+    }
+  }
+
+  private createGoalParticleEffect(x: number, y: number, playerScored: boolean) {
+    const particleCount = 20;
+    const baseColor = playerScored ? 0x00ff00 : 0xff4444;
+    const colors = [baseColor, 0xffff00, 0xff8800, 0xffffff];
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2;
+      const distance = 80 + Math.random() * 120;
+      const speed = 200 + Math.random() * 300;
+      
+      const particle = this.add.circle(x, y, 4 + Math.random() * 8, colors[Math.floor(Math.random() * colors.length)]);
+      particle.setDepth(19);
+      
+      const targetX = x + Math.cos(angle) * distance;
+      const targetY = y + Math.sin(angle) * distance;
+      
+      this.tweens.add({
+        targets: particle,
+        x: targetX,
+        y: targetY,
+        scaleX: 0,
+        scaleY: 0,
+        alpha: 0,
+        duration: 800 + Math.random() * 400,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          particle.destroy();
+        }
+      });
+    }
+    
+    // Add some star burst effects
+    for (let i = 0; i < 8; i++) {
+      const starSize = 20 + Math.random() * 15;
+      const star = this.add.star(x + (Math.random() - 0.5) * 100, y + (Math.random() - 0.5) * 100, 5, starSize, starSize * 0.6, 0xffff00);
+      star.setDepth(18);
+      
+      this.tweens.add({
+        targets: star,
+        scaleX: 0,
+        scaleY: 0,
+        alpha: 0,
+        rotation: Math.PI * 2,
+        duration: 1000,
+        ease: 'Back.easeIn',
+        onComplete: () => {
+          star.destroy();
+        }
+      });
+    }
+  }
+
   private storePreviousPositions() {
     
     this.paddleLeftPrevX = this.paddleLeft.x;
@@ -3251,7 +3496,11 @@ export default class AirHockey extends Phaser.Scene {
       
       selectedCharacter: this.selectedCharacter,
       characterName: this.characterName,
-      characterBackground: this.characterBackground
+      characterBackground: this.characterBackground,
+      
+      // Goal celebration state
+      goalCelebrationActive: this.goalCelebrationActive,
+      goalCelebrationValue: this.goalCelebrationValue
     };
     
   }
@@ -3432,21 +3681,15 @@ export default class AirHockey extends Phaser.Scene {
     this.botDifficultyIndicator.setOrigin(0.5, 0.5);
     this.botDifficultyIndicator.depth = 3;
 
-    this.timerText = this.add.text(540, 1520, this.formatTime(this.gameTimer), {
-      fontFamily: 'Commando',
-      fontSize: '48px',
+    // Recreate timer text with proper positioning using the normal UI layout
+    this.timerText = this.createStatsText(UI_CONFIG.CENTER_X, UI_CONFIG.TIMER_Y, this.formatTime(this.gameTimer), {
+      fontSize: '36px',
       color: miniGameSuccess ? '#00ff00' : state.timerColor, 
-      stroke: '#000000',
-      strokeThickness: 4
-    });
-    this.timerText.setOrigin(0.5, 0.5);
-    this.timerText.depth = 3;
-
-    this.add.text(540, 1480, 'TIME REMAINING', {
       fontFamily: 'Commando',
-      fontSize: '24px',
-      color: '#cccccc'
-    }).setOrigin(0.5, 0.5).setDepth(3);
+      backgroundColor: '#000000',
+      padding: { x: 10, y: 5 }
+    });
+    this.timerText.setDepth(DEPTHS.UI_ELEMENTS);
 
     if (miniGameSuccess) {
       this.time.delayedCall(2000, () => {
@@ -3576,6 +3819,18 @@ export default class AirHockey extends Phaser.Scene {
     this.paddleLeftTargetY = state.paddleLeftTargetY;
     
     this.miniGameUsed = state.miniGameUsed;
+
+    // Reset goal celebration state when resuming from mini-game
+    this.goalCelebrationActive = false;
+    this.goalCelebrationValue = 0;
+    if (this.goalCelebrationText) {
+      this.goalCelebrationText.destroy();
+      this.goalCelebrationText = undefined;
+    }
+    
+    // Reset modal flags to allow end game modal to show properly
+    this.endGameModalShown = false;
+    this.nextModalShown = false;
 
     this.input.keyboard?.on('keydown-ESC', () => {
       
