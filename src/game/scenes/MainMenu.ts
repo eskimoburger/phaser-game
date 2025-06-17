@@ -8,6 +8,7 @@ export class MainMenu extends Scene {
   playButton: GameObjects.Image;
   fullscreenButton: GameObjects.Image;
   fullscreenText: GameObjects.Text;
+  helpButton: GameObjects.Image;
   loadingText: GameObjects.Text;
   loadingBar: GameObjects.Graphics;
   buttonWidth: number = 480;
@@ -73,6 +74,36 @@ export class MainMenu extends Scene {
         this.fullscreenText.setText("⛷");
         this.scale.startFullscreen();
       }
+    });
+
+    // Add help button in top-right corner next to fullscreen button
+    this.helpButton = this.add
+      .image(1080 - 16 - 80, 920, "help-icon")
+      .setOrigin(1, 0)
+      .setDisplaySize(64, 64)
+      .setInteractive({ useHandCursor: true });
+
+    // Help button click handler
+    this.helpButton.on('pointerover', () => {
+      this.helpButton.setDisplaySize(68, 68);
+      this.helpButton.setTint(0xf0f0f0);
+    });
+
+    this.helpButton.on('pointerout', () => {
+      this.helpButton.setDisplaySize(64, 64);
+      this.helpButton.clearTint();
+    });
+
+    this.helpButton.on('pointerdown', () => {
+      this.helpButton.setTint(0xbbbbbb);
+      this.tweens.add({
+        targets: this.helpButton,
+        displayWidth: { from: 64, to: 60, duration: 100, yoyo: true },
+        displayHeight: { from: 64, to: 60, duration: 100, yoyo: true },
+        onComplete: () => {
+          this.scene.start("Tutorial");
+        }
+      });
     });
 
 
