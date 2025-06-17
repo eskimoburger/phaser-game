@@ -4039,6 +4039,11 @@ export default class AirHockey extends Phaser.Scene {
       this.characterName = characterNames[characterIndex];
       this.characterBackground = characterBackgrounds[characterIndex];
     }
+    
+    // Apply the character immediately after loading
+    this.time.delayedCall(50, () => {
+      this.applySelectedCharacter();
+    });
   }
 
   private applySelectedCharacter(): void {
@@ -4088,67 +4093,7 @@ export default class AirHockey extends Phaser.Scene {
     }
   }
 
-  private getSelectedCharacter(): void {
-    
-    const savedCharacter = localStorage.getItem('selectedCharacter');
-    
-    if (savedCharacter) {
-      this.selectedCharacter = savedCharacter;
-    } else {
-      // Set default character if none is saved
-      this.selectedCharacter = 'boss1';
-    }
-      
-    const characterNames = ['Lady Delayna', 'Phantom Tax'];
-    const characterFrames = ['boss1', 'boss2'];
-    const characterTextures = ['boss-field1', 'boss-field2'];
-    const characterBackgrounds = ['boss-bg1', 'boss-bg2'];
-    const characterIndex = characterFrames.indexOf(this.selectedCharacter);
-      
-      if (characterIndex !== -1) {
-        this.characterName = characterNames[characterIndex];
-        this.characterBackground = characterBackgrounds[characterIndex];
-        
-        if(this.paddleRight && this.paddleRight.scene) {
-          const paddleTexture = characterTextures[characterIndex];
-          // Defer texture setting if textures aren't ready yet
-          if(this.textures && this.textures.exists(paddleTexture)) {
-            try {
-              this.paddleRight.setTexture(paddleTexture);
-            } catch (error) {
-              console.warn('Failed to set paddle texture:', error);
-            }
-          } else {
-            // Try again after a short delay
-            this.time.delayedCall(100, () => {
-              if(this.paddleRight && this.paddleRight.scene && this.textures && this.textures.exists(paddleTexture)) {
-                try {
-                  this.paddleRight.setTexture(paddleTexture);
-                } catch (error) {
-                  console.warn('Failed to set paddle texture (delayed):', error);
-                }
-              }
-            });
-          }
-        }
-        
-        if(this.playingAreaBackground) {
-          this.playingAreaBackground.destroy();
-          
-          const bgImage = this.add.image(540, this.playAreaCenter, this.characterBackground)
-            .setAlpha(1)  
-            .setDisplaySize(1080, 1280) 
-            .setDepth(-1);   
-            
-          this.playingAreaBackground = bgImage;
-          
-        }
-      }
-    
-    if (this.redHealthLabel) {
-      this.redHealthLabel.setText(this.characterName);
-    }
-  }
+  // Remove this method as it's redundant - consolidating into loadSelectedCharacterData
 
   private showEndGameModal(isRedWinner: boolean, winnerText: string): void {
     
@@ -4248,27 +4193,17 @@ export default class AirHockey extends Phaser.Scene {
     nextModalContainer.setDepth(111);
 
     const nextModal = this.selectedCharacter === 'boss1' ? 'next-modal-boss1' : 'next-modal-boss2';
-    const nextModalImage = this.add.image(0, -200, nextModal);
+    const nextModalImage = this.add.image(0, 0, nextModal);
     nextModalImage.setScale(0.5);
     
     // Calculate scores
     const playerScore = Math.floor((100 - this.rightHealth) / 10);
     const bossScore = Math.floor((100 - this.leftHealth) / 10);
     
-    // Generate QR code URL
-    // const baseURL = 'https://yourgame.com/results';
-    // const bossName = encodeURIComponent(this.characterName);
-    // const qrURL = `${baseURL}?bossname=${bossName}&scoreplayer=${playerScore}&scoreboss=${bossScore}`;
-
-    const baseURL = 'https://vnw343gf.asse.devtunnels.ms:3000/result';
- const queryParams = new URLSearchParams({
-      bossname: this.characterName,
-      scoreplayer: String(playerScore),
-      scoreboss: String(bossScore)
-    });
-   
-    
-    const qrURL = `${baseURL}?${queryParams.toString()}`;
+    // Generate QR code URL for Facebook sharing
+    const bossName = this.characterName;
+    const sharedURL = `https://result-phaser-game.vercel.app/result?bossname=${encodeURIComponent(bossName)}&scoreplayer=${playerScore}&scoreboss=${bossScore}`;
+    const qrURL = `https://www.facebook.com/sharer.php?u=${encodeURIComponent(sharedURL)}`;
     
     // Create QR code elements
     const qrElements = this.generateQRCode(qrURL);
@@ -4296,8 +4231,8 @@ export default class AirHockey extends Phaser.Scene {
     const padding = 30;
   
     // Move everything ~30px upward from previous baseline
-    const qrY = 170;
-    const labelY = 80;
+    const qrY = 370;
+    const labelY = 170;
   
     // Background rectangle
     const qrBackground = this.add.rectangle(0, qrY, qrSize + padding, qrSize + padding, 0xffffff);
@@ -4318,14 +4253,23 @@ export default class AirHockey extends Phaser.Scene {
     });
     instructionText.setOrigin(0.5, 0.5);
   
-    // QR code image from external source
-    const qrCodeAPIUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`;
-    this.load.image('generated-qr', qrCodeAPIUrl);
+    // Generate unique key using timestamp and character data to ensure fresh QR codes
+    const timestamp = Date.now();
+    const qrKey = `qr-${this.selectedCharacter}-${timestamp}`;
+    
+    // Remove any existing QR texture to force regeneration
+    if (this.textures.exists(qrKey)) {
+      this.textures.remove(qrKey);
+    }
+    
+    // QR code image from external source with cache busting
+    const qrCodeAPIUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}&_t=${timestamp}`;
+    this.load.image(qrKey, qrCodeAPIUrl);
   
-    this.load.once('filecomplete-image-generated-qr', () => {
+    this.load.once(`filecomplete-image-${qrKey}`, () => {
       qrPlaceholder.setVisible(false);
   
-      const actualQR = this.add.image(qrPlaceholder.x, qrPlaceholder.y, 'generated-qr');
+      const actualQR = this.add.image(qrPlaceholder.x, qrPlaceholder.y, qrKey);
       actualQR.setDisplaySize(qrSize, qrSize);
       actualQR.setOrigin(0.5, 0.5);
   
